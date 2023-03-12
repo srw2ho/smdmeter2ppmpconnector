@@ -21,9 +21,7 @@ RUN pip install Cython
 # RUN pip install setup.py
 # RUN python3 setup.py install
 
-RUN pip install git+https://github.com/srw2ho/iothub2ppmpconnector.git
-
-# RUN pip install git+https://github.com/srw2ho/smdmeter2ppmpconnector.git
+RUN pip install git+https://github.com/srw2ho/smdmeter2ppmpconnector.git
 
 
 
