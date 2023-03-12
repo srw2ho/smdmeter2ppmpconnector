@@ -9,6 +9,7 @@ DEPENDENCIES_ARTIFACTORY = [
 
 DEPENDENCIES_GITHUB = {
     # "https://github.com/srw2ho/influxconnector.git": "",
+    "https://github.com/srw2ho/ppmpmessage.git": "",
     "https://github.com/srw2ho/mqttconnector.git": "",
     "https://github.com/srw2ho/tomlconfig.git": "",
 }
