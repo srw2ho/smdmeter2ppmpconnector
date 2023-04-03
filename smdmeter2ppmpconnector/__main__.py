@@ -74,7 +74,6 @@ MQTT_TLS_CERT = toml.get('mqtt.tls_cert', '')
 # QUEUE_INFLUX = Queue(maxsize=0)
 
 
-
 globMQTTClient = None
 
 
@@ -146,12 +145,13 @@ def run_SMD_meter(alias, modbushost, modbusport, devid, metertype, timeout, refr
                         logger.info(f"\t{label}: {v}{fmt}")
 
                 if globMQTTClient and globMQTTClient.isConnected():
-                    acttime = local_now()
-                    simplevars = SimpleVariables(
-                        iotDevice, jsonpayload, acttime)
-                    ppmppayload = simplevars.to_ppmp()
-                    globMQTTClient.publish(
-                        iotDevice.ppmp_topic(), ppmppayload, retain=False)
+                    if len(jsonpayload.keys()) > 0:
+                        acttime = local_now()
+                        simplevars = SimpleVariables(
+                            iotDevice, jsonpayload, acttime)
+                        ppmppayload = simplevars.to_ppmp()
+                        globMQTTClient.publish(
+                            iotDevice.ppmp_topic(), ppmppayload, retain=False)
 
                 if doReadHoldingRegister:
                     # print("\nHolding Registers:")
@@ -180,7 +180,8 @@ def start_smdmeters():
     SDMMETERS_MODBUSPORT = toml.get('sdmmeters.tcpmodbusport', [8086])
     SMDMETERS_TYPE = toml.get('sdmmeters.metertype', ['SDM630'])
     SDMMETETERS_REFRESHRATE = toml.get('sdmmeters.refreshrate', [2])
-    SDMMETETERS_CONNECTIONTIMEOUT = toml.get('sdmmeters.connectiontimeout', [2])
+    SDMMETETERS_CONNECTIONTIMEOUT = toml.get(
+        'sdmmeters.connectiontimeout', [2])
     SDMMETERS_DEVICEID = toml.get('sdmmeters.deviceid', [2])
 
     # create own thread for each SMD-device
@@ -188,7 +189,7 @@ def start_smdmeters():
         # create new thread for each OPC-UA client
         thread = Thread(target=run_SMD_meter, args=(alias,
                                                     host, port, devid, metertypes, timeout, refresrate))
-   
+
         thread.start()
 
 
