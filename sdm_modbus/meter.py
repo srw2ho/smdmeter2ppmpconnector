@@ -53,7 +53,7 @@ class Meter:
 
     wordorder = Endian.Big
     byteorder = Endian.Big
-    
+
     udp = False
 
     def __init__(self, **kwargs):
@@ -99,14 +99,18 @@ class Meter:
             else:
                 try:
                     framer_package_name = f"pymodbus.framer.{framer_name}_framer"
-                    framer_class_name = f"Modbus{framer_name[0].upper()}{framer_name[1:]}Framer"
-                    self.framer = importlib.import_module(framer_package_name).__getattribute__(framer_class_name)
+                    framer_class_name = (
+                        f"Modbus{framer_name[0].upper()}{framer_name[1:]}Framer"
+                    )
+                    self.framer = importlib.import_module(
+                        framer_package_name
+                    ).__getattribute__(framer_class_name)
                     client_args["framer"] = self.framer
                 except Exception as e:
                     raise ValueError(f"failed to import {framer_name} framer: {e}")
 
             device = kwargs.get("device")
-            
+
             udp = kwargs.get("udp")
 
             if device:
@@ -119,8 +123,7 @@ class Meter:
 
                 parity = kwargs.get("parity")
 
-                if (parity
-                        and parity.upper() in ["N", "E", "O"]):
+                if parity and parity.upper() in ["N", "E", "O"]:
                     self.parity = parity.upper()
                 else:
                     self.parity = False
@@ -138,31 +141,25 @@ class Meter:
                     parity=self.parity,
                     baudrate=self.baud,
                     timeout=self.timeout,
-                    **client_args
+                    **client_args,
                 )
             elif udp:
                 self.host = kwargs.get("host")
                 self.port = kwargs.get("port", 502)
-                
+
                 self.mode = connectionType.UDP
 
                 self.client = ModbusUdpClient(
-                    host=self.host,
-                    port=self.port,
-                    timeout=self.timeout,
-                    **client_args
+                    host=self.host, port=self.port, timeout=self.timeout, **client_args
                 )
             else:
                 self.host = kwargs.get("host")
                 self.port = kwargs.get("port", 502)
-                
+
                 self.mode = connectionType.TCP
 
                 self.client = ModbusTcpClient(
-                    host=self.host,
-                    port=self.port,
-                    timeout=self.timeout,
-                    **client_args
+                    host=self.host, port=self.port, timeout=self.timeout, **client_args
                 )
 
         self.connect()
@@ -185,14 +182,18 @@ class Meter:
                 time.sleep(0.1)
                 continue
 
-            result = self.client.read_input_registers(address=address, count=length, slave=self.unit)
+            result = self.client.read_input_registers(
+                address=address, count=length, slave=self.unit
+            )
 
             if not isinstance(result, ReadInputRegistersResponse):
                 continue
             if len(result.registers) != length:
                 continue
 
-            return BinaryPayloadDecoder.fromRegisters(result.registers, byteorder=self.byteorder, wordorder=self.wordorder)
+            return BinaryPayloadDecoder.fromRegisters(
+                result.registers, byteorder=self.byteorder, wordorder=self.wordorder
+            )
 
         return None
 
@@ -203,22 +204,30 @@ class Meter:
                 time.sleep(0.1)
                 continue
 
-            result = self.client.read_holding_registers(address=address, count=length, slave=self.unit)
+            result = self.client.read_holding_registers(
+                address=address, count=length, slave=self.unit
+            )
 
             if not isinstance(result, ReadHoldingRegistersResponse):
                 continue
             if len(result.registers) != length:
                 continue
 
-            return BinaryPayloadDecoder.fromRegisters(result.registers, byteorder=self.byteorder, wordorder=self.wordorder)
+            return BinaryPayloadDecoder.fromRegisters(
+                result.registers, byteorder=self.byteorder, wordorder=self.wordorder
+            )
 
         return None
 
     def _write_holding_register(self, address, value):
-        return self.client.write_registers(address=address, values=value, unit=self.unit)
+        return self.client.write_registers(
+            address=address, values=value, unit=self.unit
+        )
 
     def _encode_value(self, data, dtype):
-        builder = BinaryPayloadBuilder(byteorder=self.byteorder, wordorder=self.wordorder)
+        builder = BinaryPayloadBuilder(
+            byteorder=self.byteorder, wordorder=self.wordorder
+        )
 
         try:
             if dtype == registerDataType.FLOAT32:
@@ -256,9 +265,13 @@ class Meter:
 
         try:
             if rtype == registerType.INPUT:
-                return self._decode_value(self._read_input_registers(address, length), length, dtype, vtype)
+                return self._decode_value(
+                    self._read_input_registers(address, length), length, dtype, vtype
+                )
             elif rtype == registerType.HOLDING:
-                return self._decode_value(self._read_holding_registers(address, length), length, dtype, vtype)
+                return self._decode_value(
+                    self._read_holding_registers(address, length), length, dtype, vtype
+                )
             else:
                 raise NotImplementedError(rtype)
         except NotImplementedError:
@@ -317,7 +330,9 @@ class Meter:
 
         try:
             if rtype == registerType.HOLDING:
-                return self._write_holding_register(address, self._encode_value(data, dtype))
+                return self._write_holding_register(
+                    address, self._encode_value(data, dtype)
+                )
             else:
                 raise NotImplementedError(rtype)
         except NotImplementedError:
@@ -333,7 +348,9 @@ class Meter:
         return self.client.is_socket_open()
 
     def get_scaling(self, key):
-        address, length, rtype, dtype, vtype, label, fmt, batch, sf = self.registers[key]
+        address, length, rtype, dtype, vtype, label, fmt, batch, sf = self.registers[
+            key
+        ]
         return sf
 
     def read(self, key, scaling=False):
@@ -367,3 +384,32 @@ class Meter:
             return {k: v * self.get_scaling(k) for k, v in results.items()}
         else:
             return {k: v for k, v in results.items()}
+
+    def setBatchForRegisterByKey(self, key: str, setbatch: int = 0) -> bool:
+        if key in self.registers:
+            (
+                address,
+                length,
+                rtype,
+                dtype,
+                vtype,
+                label,
+                fmt,
+                batch,
+                sf,
+            ) = self.registers[key]
+
+            self.registers[key] = (
+                address,
+                length,
+                rtype,
+                dtype,
+                vtype,
+                label,
+                fmt,
+                setbatch,
+                sf,
+            )
+
+            return True
+        return False

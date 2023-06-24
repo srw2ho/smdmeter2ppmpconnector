@@ -6,6 +6,7 @@ import os
 import configparser
 from queue import Queue
 from threading import Thread
+from mqttservice.mqttdeviceservicebase import MqttDeviceServiceBase
 import sdm_modbus
 
 
@@ -74,102 +75,40 @@ MQTT_TLS_CERT = toml.get('mqtt.tls_cert', '')
 # QUEUE_INFLUX = Queue(maxsize=0)
 
 
-globMQTTClient = None
 
 
-def run_SMD_meter(alias, modbushost, modbusport, devid, metertype, timeout, refresrate):
-
-    global globMQTTClient
-
-    def getMeterByType(x):
-        if x == "SDM630":
-            return sdm_modbus.SDM630(host=modbushost, port=modbusport, timeout=timeout, framer=None, unit=devid, udp=False)
-        if x == "SDM230":
-            return sdm_modbus.SDM230(host=modbushost, port=modbusport, timeout=timeout, framer=None, unit=devid, udp=False)
-        if x == "SDM120":
-            return sdm_modbus.SDM120(host=modbushost, port=modbusport, timeout=timeout, framer=None, unit=devid, udp=False)
-        if x == "SDM72":
-            return sdm_modbus.SDM72(host=modbushost, port=modbusport, timeout=timeout, framer=None, unit=devid, udp=False)
-        if x == "SDM72V2":
-            return sdm_modbus.SDM72V2(host=modbushost, port=modbusport, timeout=timeout, framer=None, unit=devid, udp=False)
-        return None
-
-    meter = getMeterByType(metertype)
-    if (meter == None):
-        return
-
-    doJson: bool = False
+def run_SMD_meter(alias, modbushost, modbusport, devid, metertype, timeout, refresrate, readholding):
+    
+    mqttDeviceService = MqttDeviceServiceBase(
+        MQTT_HOST=MQTT_HOST,
+        MQTT_PORT=MQTT_PORT,
+        MQTT_USERNAME=MQTT_USERNAME,
+        MQTT_PASSWORD=MQTT_PASSWORD,
+        MQTT_TLS_CERT=MQTT_TLS_CERT,
+        INFODEBUGLEVEL=1,
+        MQTT_REFRESH_TIME=refresrate,
+        MQTT_NETID=alias,
+    )
+    
+    mqttDeviceService.createtMeterByType(metertype=metertype,modbushost=modbushost,modbusport=modbusport,timeout=timeout,devid=devid)
+    
+    isConnected = mqttDeviceService.connectMeter()
+    
+      # doJson: bool = False
     RefreshTime: int = refresrate
     connectTime: int = timeout
-    doReadHoldingRegister: bool = False
-
-    iotDevice = iotHubDevice(net_name='mh', devideid=alias, additionalData={
-                             'type': 'smdmeter', },)
-    if globMQTTClient:
-        globMQTTClient.publish(iotDevice.info_topic(),
-                               machine_message_generator(iotDevice), retain=True)
 
     while True:
 
-        IsConnected: bool = meter.connected()
+        IsConnected: bool = mqttDeviceService.isMeterConnected()
         if not IsConnected:
-            meter.connect()
+            mqttDeviceService.connectMeter()
             time.sleep(connectTime)
             logger.error(
                 f'device: {alias} error: Disconnected -> Try Rconnect')
             logger.info(f'device: {alias} error: Disconnected -> Try Rconnect')
 
-        if IsConnected:
-            if doJson:
-                logger.info(json.dumps(meter.read_all(scaling=True), indent=4))
-            else:
-                # print(f"{meter}:")
-                logger.info(f'device: {alias} Read Input Registers:')
-
-                # print("\nInput Registers:")
-
-                # jsonpayload = {k: v for k, v in meter.read_all(
-                #     sdm_modbus.registerType.INPUT).items() if k != ""}
-
-                jsonpayload = meter.read_all(sdm_modbus.registerType.INPUT)
-
-                for k, v in jsonpayload.items():
-                    address, length, rtype, dtype, vtype, label, fmt, batch, sf = meter.registers[
-                        k]
-
-                    if type(fmt) is list or type(fmt) is dict:
-                        logger.info(f"\t{label}: {fmt[str(v)]}")
-                    elif vtype is float:
-                        logger.info(f"\t{label}: {v:.2f}{fmt}")
-                    else:
-                        logger.info(f"\t{label}: {v}{fmt}")
-
-                if globMQTTClient and globMQTTClient.isConnected():
-                    if len(jsonpayload.keys()) > 0:
-                        acttime = local_now()
-                        simplevars = SimpleVariables(
-                            iotDevice, jsonpayload, acttime)
-                        ppmppayload = simplevars.to_ppmp()
-                        globMQTTClient.publish(
-                            iotDevice.ppmp_topic(), ppmppayload, retain=False)
-
-                if doReadHoldingRegister:
-                    # print("\nHolding Registers:")
-
-                    logger.info(f'device: {alias} Read nHolding Registers:')
-                    for k, v in meter.read_all(sdm_modbus.registerType.HOLDING).items():
-                        address, length, rtype, dtype, vtype, label, fmt, batch, sf = meter.registers[
-                            k]
-
-                        if type(fmt) is list:
-                            logger.info(f"\t{label}: {fmt[v]}")
-                        elif type(fmt) is dict:
-                            logger.info(f"\t{label}: {fmt[str(v)]}")
-                        elif vtype is float:
-                            logger.info(f"\t{label}: {v:.2f}{fmt}")
-                        else:
-                            logger.info(f"\t{label}: {v}{fmt}")
-
+        mqttDeviceService.doProcess()
         time.sleep(RefreshTime)
 
 
@@ -183,33 +122,22 @@ def start_smdmeters():
     SDMMETETERS_CONNECTIONTIMEOUT = toml.get(
         'sdmmeters.connectiontimeout', [2])
     SDMMETERS_DEVICEID = toml.get('sdmmeters.deviceid', [2])
+    SDMMETERS_READHOLDING = toml.get('sdmmeters.readholding', [0])
 
     # create own thread for each SMD-device
-    for alias, host, port, devid, metertypes, timeout, refresrate in zip(SMDMETERS_MODBUSALIAS, SMDMETERS_MODBUSHOST, SDMMETERS_MODBUSPORT, SDMMETERS_DEVICEID, SMDMETERS_TYPE, SDMMETETERS_CONNECTIONTIMEOUT, SDMMETETERS_REFRESHRATE):
+    for alias, host, port, devid, metertypes, timeout, refresrate, readholding in zip(SMDMETERS_MODBUSALIAS, SMDMETERS_MODBUSHOST, SDMMETERS_MODBUSPORT, SDMMETERS_DEVICEID, SMDMETERS_TYPE, SDMMETETERS_CONNECTIONTIMEOUT, SDMMETETERS_REFRESHRATE, SDMMETERS_READHOLDING):
         # create new thread for each OPC-UA client
         thread = Thread(target=run_SMD_meter, args=(alias,
-                                                    host, port, devid, metertypes, timeout, refresrate))
+                                                    host, port, devid, metertypes, timeout, refresrate, readholding))
 
         thread.start()
 
 
 def main():
-    global globMQTTClient
 
-    # connect to MQTT and InfluxDB
-    mqtt_client = MQTTClient(host=MQTT_HOST, port=MQTT_PORT,
-                             user=MQTT_USERNAME, password=MQTT_PASSWORD, tls_cert=MQTT_TLS_CERT)
-    mqtt_client.connect(forever=True)
-
-    globMQTTClient = mqtt_client
-    # # create and start convertor thread
-    # Thread(target=convertor).start()
-
-    # # create and start InfluxDB consumer thread
-    # Thread(target=influx_consumer).start()
     start_smdmeters()
 
-    mqtt_client.start()
+    # mqtt_client.start()
 
 
 if __name__ == '__main__':
