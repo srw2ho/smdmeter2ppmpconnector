@@ -414,18 +414,18 @@ class Meter:
                 batch,
                 sf,
             ) = self.registers[key]
-
-            self.registers[key] = (
-                address,
-                length,
-                rtype,
-                dtype,
-                vtype,
-                label,
-                fmt,
-                setbatch,
-                sf,
-            )
+            if batch!=setbatch:
+                self.registers[key] = (
+                    address,
+                    length,
+                    rtype,
+                    dtype,
+                    vtype,
+                    label,
+                    fmt,
+                    setbatch,
+                    sf,
+                )
 
             return True
         return False

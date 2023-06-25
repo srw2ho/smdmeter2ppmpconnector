@@ -341,6 +341,7 @@ class MqttDeviceServiceBase(object):
     def on_connect(self, client, userdata, flags, rc):
         logger.info(f"MQTT-Client: on_connect -> publish_MQTTMetaData()")
 
+        self.restoreBatchfordallHoldingRegisters()
         allregisterPayload = self.readallRegisters()
         self.doPublishPayload(allregisterPayload)
 
