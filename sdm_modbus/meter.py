@@ -385,6 +385,22 @@ class Meter:
         else:
             return {k: v for k, v in results.items()}
 
+    def getBatchForRegisterByKey(self, key: str) -> int:
+        if key in self.registers:
+            (
+                address,
+                length,
+                rtype,
+                dtype,
+                vtype,
+                label,
+                fmt,
+                batch,
+                sf,
+            ) = self.registers[key]
+            return batch
+        return -1
+
     def setBatchForRegisterByKey(self, key: str, setbatch: int = 0) -> bool:
         if key in self.registers:
             (

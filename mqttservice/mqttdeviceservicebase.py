@@ -18,9 +18,12 @@ from sdm_modbus.meter import registerType
 from pymodbus.register_write_message import WriteMultipleRegistersResponse
 
 
-DEVICE_TYPE = "homemqtt"
+# DEVICE_TYPE = "homemqtt"
+
 DEVICE_TYPE_CTRL = "homemqttcontrol"
-DEVICE_NAME = "homemqttservice"
+SERVICE_DEVICE_NAME = "homemqttservice"
+SERVICE_DEVICE_TYPE = "homemqttservice"
+SERVICE_TYPE_VERSION = "homemqttVersion"
 
 logger = logging.getLogger("root")
 
@@ -64,7 +67,7 @@ class MqttDeviceServiceBase(object):
         self.m_lock = threading.RLock()
         self.m_deviceState = DeviceState.UNKNOWN
         self.m_doMQTTConnect = False
-        self.m_readHoldingRegs = {}
+        self.m_HoldingBatchRegister={}
 
         self._mqtt_client = MQTTClient(
             host=MQTT_HOST,
@@ -75,10 +78,10 @@ class MqttDeviceServiceBase(object):
         )
         self.m_device = Device(
             additionalData={
-                "type": DEVICE_TYPE,
+                "type": SERVICE_DEVICE_TYPE,
                 "hostname": self.m_MQTT_NETID,
                 "generalconfig": {
-                    "InterfaceType": "MQTTComm",
+                    "InterfaceType": f"{SERVICE_TYPE_VERSION}",
                     "InterfaceVersion": "V1.0",
                     "MetadataVersion": "V1.0",
                 },
@@ -87,28 +90,28 @@ class MqttDeviceServiceBase(object):
 
         self.m_ctrldevice = Device(
             additionalData={
-                "type": DEVICE_TYPE_CTRL,
-                "hostname": DEVICE_NAME,
+                "type": DEVICE_TYPE_CTRL ,
+                "hostname": SERVICE_DEVICE_NAME,
             },
         )
         if self.m_MQTT_NETID != None:
-            name = f"{DEVICE_NAME}/{self.m_MQTT_NETID}"
-            ctrldevicenetid = f"{DEVICE_NAME}_{self.m_MQTT_NETID}"
+            name = f"{SERVICE_DEVICE_NAME}/{self.m_MQTT_NETID}"
+            ctrldevicenetid = f"{SERVICE_DEVICE_NAME}_{self.m_MQTT_NETID}"
 
             self.m_device.setNetId(name)
 
             if os.name == "nt":
                 self.m_metaDataOutFilePath = (
-                    f"./{DEVICE_NAME}_{self.m_MQTT_NETID}_metadata.json"
+                    f"./{SERVICE_DEVICE_NAME}_{self.m_MQTT_NETID}_metadata.json"
                 )
                 self.m_configControlChannelSettingPath = (
-                    f"./{DEVICE_NAME}_{self.m_MQTT_NETID}_configctrlchannel.json"
+                    f"./{SERVICE_DEVICE_NAME}_{self.m_MQTT_NETID}_configctrlchannel.json"
                 )
             else:
                 self.m_metaDataOutFilePath = (
-                    f"/etc/moehwald/{DEVICE_NAME}_{self.m_MQTT_NETID}_metadata.json"
+                    f"/etc/moehwald/{SERVICE_DEVICE_NAME}_{self.m_MQTT_NETID}_metadata.json"
                 )
-                self.m_configControlChannelSettingPath = f"/etc/moehwald/{DEVICE_NAME}_{self.m_MQTT_NETID}_configctrlchannel.json"
+                self.m_configControlChannelSettingPath = f"/etc/moehwald/{SERVICE_DEVICE_NAME}_{self.m_MQTT_NETID}_configctrlchannel.json"
 
             self.m_ctrldevice.setNetId(ctrldevicenetid)
             self.m_ctrldevice.sethostNameByNetId(self.m_MQTT_NETID)
@@ -186,6 +189,7 @@ class MqttDeviceServiceBase(object):
                 unit=devid,
                 udp=False,
             )
+        if self.m_SMD_Device!=None: self.storeBatchfordallHoldingRegisters()
 
     def connectMeter(self) -> bool:
         self.m_SMD_Device.connect()
@@ -239,7 +243,7 @@ class MqttDeviceServiceBase(object):
 
     def getTopicByKey(self, key: str) -> str:
         replaced = key
-        topic = f"mh/{DEVICE_NAME}/{self.m_MQTT_NETID}/data/{replaced}"
+        topic = f"mh/{SERVICE_DEVICE_NAME}/{self.m_MQTT_NETID}/data/{replaced}"
 
         return topic
 
@@ -264,7 +268,8 @@ class MqttDeviceServiceBase(object):
                             doUpdate = False
                         else:
                             # Holding-Register beim nächsten Lesen auslesen
-                            self.m_SMD_Device.setBatchForRegisterByKey(identifier, 1)
+                            self.m_SMD_Device.setBatchForRegisterByKey(
+                                identifier, 1)
                             doUpdate = True
                         if not doUpdate:
                             if self.m_INFODEBUGLEVEL > 0:
@@ -318,7 +323,7 @@ class MqttDeviceServiceBase(object):
             logger.error(f"MQTTConsumeQueue Parse error: {exception}")
 
     def getMetaDataTopic(self) -> str:
-        topic = f"mh/{DEVICE_NAME}/{self.m_MQTT_NETID}/metadata"
+        topic = f"mh/{SERVICE_DEVICE_NAME}/{self.m_MQTT_NETID}/metadata"
         return topic
 
     def MQTTConsumeQueue(self):
@@ -335,6 +340,7 @@ class MqttDeviceServiceBase(object):
 
     def on_connect(self, client, userdata, flags, rc):
         logger.info(f"MQTT-Client: on_connect -> publish_MQTTMetaData()")
+
         allregisterPayload = self.readallRegisters()
         self.doPublishPayload(allregisterPayload)
 
@@ -348,10 +354,10 @@ class MqttDeviceServiceBase(object):
 
         # devicekey = f"{DEVICE_NAME}.{self._MQTT_NETID}"
         devicekey = f"{self.m_MQTT_NETID}"
-        devicetopic = f"mh/opcua2mqttservice/{self.m_MQTT_NETID}"
+        devicetopic = f"mh/{SERVICE_DEVICE_NAME}/{self.m_MQTT_NETID}"
         devicepayload = {
             devicekey: {
-                "type": "opcua2mqtt",
+                "type": f"{SERVICE_DEVICE_TYPE}",
                 "topic": devicetopic,
             }
         }
@@ -411,7 +417,7 @@ class MqttDeviceServiceBase(object):
 
             topic = self.getMetaDataTopic()
 
-            self.readallRegisters()
+            # self.readallRegisters()
             jsondatapayload = {
                 self.getMetaKeyByKey(k): {
                     "identifier": k,
@@ -479,7 +485,8 @@ class MqttDeviceServiceBase(object):
             )
 
             # delete previous Topic
-            self._mqtt_client.publish(self.getDeviceServicesTopic(), None, retain=True)
+            self._mqtt_client.publish(
+                self.getDeviceServicesTopic(), None, retain=True)
 
             # delete previous Topic
             # self._mqtt_client.publish(self.getMetaDataTopic(), None, retain=True)
@@ -537,6 +544,18 @@ class MqttDeviceServiceBase(object):
         finally:
             self.m_lock.release()
 
+    def storeBatchfordallHoldingRegisters(self) -> None:
+        self.m_HoldingBatchRegister = {k: self.m_SMD_Device.getBatchForRegisterByKey(k) for k, v in self.m_SMD_Device.registers.items(
+        ) if (v[2] == sdm_modbus.registerType.HOLDING)}
+
+    def restoreBatchfordallHoldingRegisters(self) -> None:
+        for k, v in self.m_HoldingBatchRegister.items():
+            self.m_SMD_Device.setBatchForRegisterByKey(k,v)
+
+    def setBatchfordallHoldingRegisters(self, batch:int) -> None:
+        for k, v in self.m_HoldingBatchRegister.items():
+            self.m_SMD_Device.setBatchForRegisterByKey(k,batch)
+            
     def readallRegisters(self) -> dict:
         try:
             self.m_lock.acquire()
@@ -548,9 +567,9 @@ class MqttDeviceServiceBase(object):
                 sdm_modbus.registerType.HOLDING, scaling=True
             )
 
-            for k in jsonpayloadHolding.keys():
-                # Read Holding-Register nicht ausführen : Batch = 0
-                self.m_SMD_Device.setBatchForRegisterByKey(k, 0)
+            # Holding-Register nur einmal lesen und dann nicht mit batch=0 ausblenden
+            
+            self.setBatchfordallHoldingRegisters(0)
 
             self.m_MQTTPayload.update(jsonpayloadInput)
             self.m_MQTTPayload.update(jsonpayloadHolding)
@@ -616,11 +635,11 @@ class MqttDeviceServiceBase(object):
                 if len(jsonpayloadInput.keys()) > 0:
                     acttime = local_now()
                     simplevars = SimpleVariables(
-                        self.m_device, jsonpayloadInput, acttime
+                        self.m_ctrldevice, jsonpayloadInput, acttime
                     )
                     ppmppayload = simplevars.to_ppmp()
                     self._mqtt_client.publish(
-                        self.m_device.ppmp_topic(), ppmppayload, retain=False
+                        self.m_ctrldevice.ppmp_topic(), ppmppayload, retain=False
                     )
                     self.doPublishPayload(jsonpayloadInput)
 
@@ -661,11 +680,13 @@ class MqttDeviceServiceBase(object):
                 self.m_deviceState = devicestate
                 self._mqtt_client.publish(
                     self.m_device.info_topic(),
-                    machine_message_generator(self.m_device, state=devicestate),
+                    machine_message_generator(
+                        self.m_device, state=devicestate),
                     retain=True,
                 )
                 self._mqtt_client.publish(
                     self.m_ctrldevice.info_topic(),
-                    machine_message_generator(self.m_ctrldevice, state=devicestate),
+                    machine_message_generator(
+                        self.m_ctrldevice, state=devicestate),
                     retain=True,
                 )
