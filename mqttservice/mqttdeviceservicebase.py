@@ -610,27 +610,6 @@ class MqttDeviceServiceBase(object):
                 sdm_modbus.registerType.INPUT, scaling=True
             )
             self.LogInfo(jsonpayloadInput)
-            # logger.info(f"device: {self.m_MQTT_NETID} Read Input Registers:")
-
-            # for k, v in jsonpayloadInput.items():
-            #     (
-            #         address,
-            #         length,
-            #         rtype,
-            #         dtype,
-            #         vtype,
-            #         label,
-            #         fmt,
-            #         batch,
-            #         sf,
-            #     ) = self.m_SMD_Device.registers[k]
-
-            #     if type(fmt) is list or type(fmt) is dict:
-            #         logger.info(f"\t{label}: {fmt[str(v)]}")
-            #     elif vtype is float:
-            #         logger.info(f"\t{label}: {v:.2f}{fmt}")
-            #     else:
-            #         logger.info(f"\t{label}: {v}{fmt}")
 
             if self._mqtt_client and self._mqtt_client.isConnected():
                 if len(jsonpayloadInput.keys()) > 0:
