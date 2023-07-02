@@ -102,13 +102,15 @@ def run_SMD_meter(alias, modbushost, modbusport, devid, metertype, timeout, refr
 
         isMQTTConnected = mqttDeviceService.isMQTTConnected()
         IsConnected: bool = mqttDeviceService.isMeterConnected()
+        
+ 
         if not IsConnected:
             mqttDeviceService.connectMeter()
             time.sleep(connectTime)
             logger.error(
-                f'device: {alias} error: Disconnected -> Try Rconnect')
-            logger.info(f'device: {alias} error: Disconnected -> Try Rconnect')
-            
+                f'device: {alias} error: Disconnected -> Try Reconnect')
+            logger.info(f'device: {alias} error: Disconnected -> Try Reconnect')
+
         if isMQTTConnected:
             mqttDeviceService.doProcess()
         time.sleep(RefreshTime)

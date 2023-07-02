@@ -14,6 +14,7 @@ from queue import Queue
 import time
 from datetime import datetime, timezone
 import sdm_modbus
+from sdm_modbus import meter
 from sdm_modbus.meter import registerType
 from pymodbus.register_write_message import WriteMultipleRegistersResponse
 
@@ -113,6 +114,9 @@ class MqttDeviceServiceBase(object):
             self.m_ctrldevice.sethostNameByNetId(self.m_MQTT_NETID)
 
         self.readControlChannelFile()
+
+    def getMeter(self) -> meter.Meter:
+        return self.m_SMD_Device
 
     def createtMeterByType(
         self,
@@ -340,6 +344,10 @@ class MqttDeviceServiceBase(object):
     def on_connect(self, client, userdata, flags, rc):
         logger.info(f"MQTT-Client: on_connect -> publish_MQTTMetaData()")
 
+        # delete previous Topic
+        self._mqtt_client.publish(self.getDeviceServicesTopic(), None, retain=True)
+        # self._mqtt_client.publish(self.m_device.info_topic(), None, retain=True)
+
         self.restoreBatchfordallHoldingRegisters()
         allregisterPayload = self.readallRegisters()
         # bei start alle retained Senden
@@ -463,10 +471,10 @@ class MqttDeviceServiceBase(object):
             self.m_SMD_Device.connect()
             # time.sleep(connectTime)
             logger.error(
-                f"device: {self.MQTT_NETID} error: Disconnected -> Try Rconnect"
+                f"device: {self.m_MQTT_NETID} error: Disconnected -> Try Rconnect"
             )
             logger.info(
-                f"device: {self.MQTT_NETID} error: Disconnected -> Try Rconnect"
+                f"device: {self.m_MQTT_NETID} error: Disconnected -> Try Rconnect"
             )
 
     def doMQTTconnect(self):
@@ -474,8 +482,9 @@ class MqttDeviceServiceBase(object):
 
         if not self.m_doMQTTConnect:
             self.m_doMQTTConnect = True
+            infoTopic = self.m_device.info_topic()
             self._mqtt_client.last_will(
-                self.m_device.info_topic(),
+                infoTopic,
                 machine_message_generator(
                     self.m_device, state=DeviceState.ERROR, code="offline"
                 ),
@@ -485,9 +494,6 @@ class MqttDeviceServiceBase(object):
             self._mqtt_client.connect(
                 connectHandler=self.on_connect, disconnectHandler=self.on_disconnect
             )
-
-            # delete previous Topic
-            self._mqtt_client.publish(self.getDeviceServicesTopic(), None, retain=True)
 
             # delete previous Topic
             # self._mqtt_client.publish(self.getMetaDataTopic(), None, retain=True)

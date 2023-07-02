@@ -345,7 +345,7 @@ class Meter:
         self.client.close()
 
     def connected(self):
-        return self.client.is_socket_open()
+            return self.client.is_socket_open()
 
     def get_scaling(self, key):
         address, length, rtype, dtype, vtype, label, fmt, batch, sf = self.registers[
