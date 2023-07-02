@@ -9,8 +9,8 @@ from pymodbus.pdu import ModbusRequest, ModbusResponse, ModbusExceptions
 
 
 # Storage(SPH Type)：
-# 03 register range：0~124,1000~1124；
-# 04 register range：0~124,1000~1124，1125~1249
+# Input-Register: 03 register range：0~124,1000~1124；
+# Holding Register: 04 register range：0~124,1000~1124，1125~1249
 
 class Growatt(meter.Meter):
     pass
@@ -71,23 +71,41 @@ class SPH_TL3_BH_UP(Growatt):
             "ELocalLoad_Total": (1124, 4, meter.registerType.INPUT, meter.registerDataType.UINT32, float, "Local_load energy total", "w", 3, 0.1),
             "dwExportLimitApparentPower": (1128, 4, meter.registerType.INPUT, meter.registerDataType.UINT32, float, "ExportLimitApparentPower", "W", 3, 0.1),
             "BMS_Status": (1166, 2, meter.registerType.INPUT, meter.registerDataType.UINT16, int, "Status from BMS", "", 3, 1),
-            "BMS_Error": (1170, 2, meter.registerType.INPUT, meter.registerDataType.UINT16, int, "Error infomation from BMS", "A", 3, 0.1),
-            "BMS_SOC": (1172, 2, meter.registerType.INPUT, meter.registerDataType.UINT16, int, "SOC from BM", "", 3, 1),
+            "BMS_Error": (1170, 2, meter.registerType.INPUT, meter.registerDataType.UINT16, int, "Error infomation from BMS", "A", 3, 1),
+            "BMS_SOC": (1172, 2, meter.registerType.INPUT, meter.registerDataType.UINT16, int, "SOC from BM", "%", 3, 1),
+            "BMS_BatteryVolt": (1174, 2, meter.registerType.INPUT, meter.registerDataType.UINT16, int, "Battery voltage from BMS", "V", 3, 1),
+            "BMS_BatteryCurrent": (1176, 2, meter.registerType.INPUT, meter.registerDataType.UINT16, int, "Battery current from BMS", "A", 3, 1),
+            "BMS_BatteryTemp": (1176, 2, meter.registerType.INPUT, meter.registerDataType.UINT16, int, "Battery temperature from BMS", "°C", 3, 1),
             "BMS_SOH": (1192, 2, meter.registerType.INPUT, meter.registerDataType.UINT16, int, "BMS_SOH", "", 3, 1),
-            "uwMaxCellVolt": (1216, 2, meter.registerType.INPUT, meter.registerDataType.UINT16, float, "Maximum single battery voltage", "V", 3, 0.1),
-            "uwMinCellVolt": (1218, 2, meter.registerType.INPUT, meter.registerDataType.UINT16, float, "Lowest single battery voltage", "V", 3, 0.1),
+            "uwMaxCellVolt": (1216, 2, meter.registerType.INPUT, meter.registerDataType.UINT16, float, "Maximum single battery voltage", "V", 3, 0.001),
+            "uwMinCellVolt": (1218, 2, meter.registerType.INPUT, meter.registerDataType.UINT16, float, "Lowest single battery voltage", "V", 3, 0.001),
             # Holding-Register
             "OnOff": (0, 2, meter.registerType.HOLDING, meter.registerDataType.UINT16, int, "Inverter_Status", "0,1,2,3", 1, 1),
             #         Set Holding  register3,4,5,99 CMD  will be memory or  not(1/0), if not, these settings are the  initial     #
-            "PF_CMD_memory_state": (2, 2, meter.registerType.HOLDING, meter.registerDataType.UINT16, int, "Set Holding register3,4,5,99", "%", 1, 1),
+            "SaftyFuncEn": (2, 2, meter.registerType.HOLDING, meter.registerDataType.UINT16, int, "0 :disable,1: enable", "", 1, 1),
 
-            "Active_P_Rate": (4, 2, meter.registerType.HOLDING, meter.registerDataType.UINT16, int, "Inverter Max output active power percent", "%", 1, 0.1),
+            "PF_CMD_memory_state": (4, 2, meter.registerType.HOLDING, meter.registerDataType.UINT16, int, "Set Holding register3,4,5,99", "", 1, 1),
 
-            "ExportLimit_EN_Dis": (244, 2, meter.registerType.HOLDING, meter.registerDataType.UINT16, int, "ExportLimit_En/dis", "0,1", 1, 1),
+            "Active_P_Rate": (6, 2, meter.registerType.HOLDING, meter.registerDataType.UINT16, int, "Inverter Max output active power percent", "%", 1, 0.1),
+
+            "Reactive_P_Rate": (8, 2, meter.registerType.HOLDING, meter.registerDataType.UINT16, int, "Inverter max output reactive power percent", "%", 1, 0.1),
+
+            "Power_factor": (10, 2, meter.registerType.HOLDING, meter.registerDataType.UINT16, int, "Inverter output power factor’s 10000 times", "%", 1, 1000),
+
+            "ExportLimit_EN_Dis": (244, 2, meter.registerType.HOLDING, meter.registerDataType.UINT16, int, "ExportLimit_En/dis", "0...3", 1, 1),
             "ExportLimitPowerRate": (246, 2, meter.registerType.HOLDING, meter.registerDataType.UINT16, int, "ExportLimitPowerRate", "%", 1, 0.1),
 
             # SET SOC-Min: Register 608
             "SOC_Min": (616, 2, meter.registerType.HOLDING, meter.registerDataType.UINT16, int, "SOC_Min", "0", 2, 1),
 
-        }
+            # 2:METER
+            # 1:cWirele ssCT
+            # 0:cWiredCT
+            "bCTMode": (1074, 2, meter.registerType.HOLDING, meter.registerDataType.UINT16, int, "2:METER 1:cWirelessCT 0:cWiredCT", "0,1,2", 2, 1),
 
+            # ForceChrEn/ForceDischrEn
+            # Load first=0/bat first=1 /grid first=3
+            "Load_Priority": (1176, 2, meter.registerType.HOLDING, meter.registerDataType.UINT16, int, "Load first/bat first /grid first", "0,1,2", 2, 1),
+
+
+        }
