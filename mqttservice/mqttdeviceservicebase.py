@@ -13,6 +13,7 @@ from ppmpmessage.v3.device import iotHubDevice
 from queue import Queue
 import time
 from datetime import datetime, timezone
+import growatt
 import sdm_modbus
 from sdm_modbus import meter
 from sdm_modbus.meter import registerType
@@ -172,7 +173,7 @@ class MqttDeviceServiceBase(object):
                 udp=False,
             )
         if metertype == "SPH_TL3_BH_UP":
-            self.m_SMD_Device = sdm_modbus.SPH_TL3_BH_UP(
+            self.m_SMD_Device = growatt.SPH_TL3_BH_UP(
                 host=modbushost,
                 port=modbusport,
                 timeout=timeout,
@@ -181,7 +182,7 @@ class MqttDeviceServiceBase(object):
                 udp=False,
             )
         if metertype == "SPH_TL3_BH_UP_Meter":
-            self.m_SMD_Device = sdm_modbus.SPH_TL3_BH_UP_Meter(
+            self.m_SMD_Device = growatt.SPH_TL3_BH_UP_Meter(
                 host=modbushost,
                 port=modbusport,
                 timeout=timeout,

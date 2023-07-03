@@ -4,6 +4,10 @@ test/smdmeter2ppmpconnector/__pycache__/*
 .pytest_cache/*
 test/smdmeter2ppmpconnector/debug.txt
 smdmeter2ppmpconnector/__pycache__/*
+growatt/__pycache__/*
+mqttservice/__pycache__/*
+sdm_modbus/__pycache__/*
+kebakeycontactP30/__pycache__/*
 .vscode/*
 permit
 permit.sha256
