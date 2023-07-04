@@ -21,6 +21,7 @@ class connectionType(enum.Enum):
 class registerType(enum.Enum):
     INPUT = 1
     HOLDING = 2
+    SINGLE_HOLDING = 3
 
 
 class registerDataType(enum.Enum):
@@ -224,6 +225,9 @@ class Meter:
             address=address, values=value, unit=self.unit
         )
 
+    def _write_singleholding_register(self, address, value):
+        return self.client.write_register(address=address, values=value, unit=self.unit)
+
     def _encode_value(self, data, dtype):
         builder = BinaryPayloadBuilder(
             byteorder=self.byteorder, wordorder=self.wordorder
@@ -333,6 +337,10 @@ class Meter:
                 return self._write_holding_register(
                     address, self._encode_value(data, dtype)
                 )
+            elif rtype == registerType.SINGLE_HOLDING:
+                return self._write_singleholding_register(
+                    address, self._encode_value(data, dtype)
+                )
             else:
                 raise NotImplementedError(rtype)
         except NotImplementedError:
@@ -345,7 +353,7 @@ class Meter:
         self.client.close()
 
     def connected(self):
-            return self.client.is_socket_open()
+        return self.client.is_socket_open()
 
     def get_scaling(self, key):
         address, length, rtype, dtype, vtype, label, fmt, batch, sf = self.registers[
@@ -414,7 +422,7 @@ class Meter:
                 batch,
                 sf,
             ) = self.registers[key]
-            if batch!=setbatch:
+            if batch != setbatch:
                 self.registers[key] = (
                     address,
                     length,

@@ -25,47 +25,47 @@ class KeContactP30(Keba):
         super().__init__(*args, **kwargs)
 
         self.registers = {
-            "Charging_State": (1000, 2, meter.registerType.HOLDING, meter.registerDataType.UINT32, int, "Inverter_Status", "0,1,3", 1, 1),
-            "Cable_State": (1004, 2, meter.registerType.HOLDING, meter.registerDataType.UINT32, float, "Input_power", "W", 1, 0.1),
-            "EVSE_Error_Code": (1006, 2, meter.registerType.HOLDING, meter.registerDataType.UINT32, float, "PV1 voltage", "V", 1, 0.1),
-            "Current_L1": (1008, 2, meter.registerType.HOLDING, meter.registerDataType.UINT32, float, "PV1 input current", "A", 1, 0.1),
-            "Current_L2": (1010, 2, meter.registerType.HOLDING, meter.registerDataType.UINT32, float, "PV1 input power", "W", 1, 0.1),
-            "Current_L3": (1012, 2, meter.registerType.HOLDING, meter.registerDataType.UINT32, float, "PV2 voltage", "U", 1, 0.1),
-            "Serial_Number": (1014, 2, meter.registerType.HOLDING, meter.registerDataType.UINT32, float, "PV2 input current", "A", 1, 0.1),
-            "Product_Type": (1016, 2, meter.registerType.HOLDING, meter.registerDataType.UINT32, float, " PV2 input power", "W", 1, 0.1),
-            "Firmware_Version": (1018, 2, meter.registerType.HOLDING, meter.registerDataType.UINT32, float, "Output power", "W", 1, 0.1),
-            "Active_Power": (1020, 2, meter.registerType.HOLDING, meter.registerDataType.UINT32, float, "Grid frequency", "Hz", 1, 0.01),
+            "Charging_State": (1000, 2, meter.registerType.HOLDING, meter.registerDataType.UINT32, int, "Charging State", "0,1,2,3,4,5", 1, 1),
+            "Cable_State": (1004, 2, meter.registerType.HOLDING, meter.registerDataType.UINT32, int, "Cable state", "0,1,3,5,7", 2, 1),
+            "EVSE_Error_Code": (1006, 2, meter.registerType.HOLDING, meter.registerDataType.UINT32, int, "EVSE Error Code", "V", 3, 1),
+            "Current_L1": (1008, 2, meter.registerType.HOLDING, meter.registerDataType.UINT32, float, "Current L1", "A", 4, 0.001),
+            "Current_L2": (1010, 2, meter.registerType.HOLDING, meter.registerDataType.UINT32, float, "Current L2", "A", 5, 0.001),
+            "Current_L3": (1012, 2, meter.registerType.HOLDING, meter.registerDataType.UINT32, float, "Current L3", "A", 6, 0.001),
+            "Serial_Number": (1014, 2, meter.registerType.HOLDING, meter.registerDataType.UINT32, int, "Serial Number", "", 7, 1),
+            "Product_Type": (1016, 2, meter.registerType.HOLDING, meter.registerDataType.UINT32, int, "Product Type", "", 1, 8),
+            "Firmware_Version": (1018, 2, meter.registerType.HOLDING, meter.registerDataType.UINT32, int, "Firmware Version", "", 9, 1),
+            "Active_Power": (1020, 2, meter.registerType.HOLDING, meter.registerDataType.UINT32, float, "Active Power", "W", 10, 0.001),
 
-            "Total_Energy": (1036, 2, meter.registerType.HOLDING, meter.registerDataType.UINT32, float, "Three/single_phase grid voltage", "V", 1, 0.1),
-            "Voltage_U1": (1040, 2, meter.registerType.HOLDING, meter.registerDataType.UINT32, float, "Three/single_phase grid output current", "A", 1, 0.1),
-            "Voltage_U2": (1042, 2, meter.registerType.HOLDING, meter.registerDataType.UINT32, float, "Three/single_phase grid output watt", "W", 1, 0.1),
-            "Voltage_U3": (1044, 2, meter.registerType.HOLDING, meter.registerDataType.UINT32, float, "Today_generate energy", "W", 1, 0.1),
-            "Power_Factor": (1046, 2, meter.registerType.HOLDING, meter.registerDataType.UINT32, float, "Total_generate energy", "W", 1, 0.1),
-            "Max_Charging_Current": (1100, 2, meter.registerType.HOLDING, meter.registerDataType.UINT32, float, "PV1_Energy today", "W", 1, 0.1),
-            "Max_Supported_urrent": (1110, 2, meter.registerType.HOLDING, meter.registerDataType.UINT32, float, "PV1_Energy today", "W", 1, 0.1),
-            "RFID_Card": (1500, 2, meter.registerType.HOLDING, meter.registerDataType.UINT32, float, "PV2_Energy today", "W", 1, 0.1),
-            "Charged_Energy": (1502, 2, meter.registerType.HOLDING, meter.registerDataType.UINT32, float, "PV_Energy total", "W", 1, 0.1),
+            "Total_Energy": (1036, 2, meter.registerType.HOLDING, meter.registerDataType.UINT32, float, "Total Energy", "KWh", 11, 0.001),
+            "Voltage_U1": (1040, 2, meter.registerType.HOLDING, meter.registerDataType.UINT32, float, "Voltage U1", "U", 12, 1),
+            "Voltage_U2": (1042, 2, meter.registerType.HOLDING, meter.registerDataType.UINT32, float, "Voltage U2", "U", 13, 1),
+            "Voltage_U3": (1044, 2, meter.registerType.HOLDING, meter.registerDataType.UINT32, float, "Voltage U3", "U", 14, 1),
+            "Power_Factor": (1046, 2, meter.registerType.HOLDING, meter.registerDataType.UINT32, float, "Power Factor", "%", 15, 0.1),
+            "Max_Charging_Current": (1100, 2, meter.registerType.HOLDING, meter.registerDataType.UINT32, float, "Max Charging Current", "A", 16, 0.001),
+            "Max_Supported_Current": (1110, 2, meter.registerType.HOLDING, meter.registerDataType.UINT32, float, "Max Supported Current", "A", 17, 0.001),
+            "RFID_Card": (1500, 2, meter.registerType.HOLDING, meter.registerDataType.UINT32, int, "RFID_ Card", "", 18, 1),
+            "Charged_Energy": (1502, 2, meter.registerType.HOLDING, meter.registerDataType.UINT32, float, "Charged Energy", "Wh", 19, 1),
 
-            "Phase_Switching_Source": (1552, 2, meter.registerType.HOLDING, meter.registerDataType.UINT32, float, "Inverter temperature", "°C", 2, 0.1),
-            "Phase_Switching_State": (1552, 2, meter.registerType.HOLDING, meter.registerDataType.UINT32, float, "System work mode", "", 2, 1),
-            "Failsafe_Current_Setting": (1600, 2, meter.registerType.HOLDING, meter.registerDataType.UINT32, float, "Discharge power", "W", 2, 0.1),
-            "Failsafe_Timeout_Setting": (1602, 2, meter.registerType.HOLDING, meter.registerDataType.UINT32, float, "Charge power", "W", 2, 0.1),
+            "Phase_Switching_Source": (1552, 2, meter.registerType.HOLDING, meter.registerDataType.UINT32, int, "Phase Switching Source", "", 20, 1),
+            "Phase_Switching_State": (1552, 2, meter.registerType.HOLDING, meter.registerDataType.UINT32, int, "Phase Switching State", "", 22, 1),
+            "Failsafe_Current_Setting": (1600, 2, meter.registerType.HOLDING, meter.registerDataType.UINT32, float, "Failsafe Current Setting", "A", 22, 0.001),
+            "Failsafe_Timeout_Setting": (1602, 2, meter.registerType.HOLDING, meter.registerDataType.UINT32, int, "Failsafe_Timeout_Setting", "sec", 23, 1),
             
-            # Write Holding-Register
-            "Set_Charging_Current": (5004, 2, meter.registerType.WRITE_HOLDING, meter.registerDataType.UINT32, int, "Inverter_Status", "0,1,2,3", 1, 1),
-            "Set_Energy": (5010, 2, meter.registerType.WRITE_HOLDING, meter.registerDataType.UINT32, int, "0 :disable,1: enable", "", 1, 1),
+            # Write Single Holding-Register
+            "Set_Charging_Current": (5004, 2, meter.registerType.SINGLE_HOLDING, meter.registerDataType.UINT32, float, "Set Charging Current", "A", 1, 0.001),
+            "Set_Energy": (5010, 2, meter.registerType.SINGLE_HOLDING, meter.registerDataType.UINT32, float, "Set Energy", "kWh", 2, 0.001),
 
-            "Unlock_Plug": (5012, 2, meter.registerType.WRITE_HOLDING, meter.registerDataType.UINT32, int, "Set Holding register3,4,5,99", "", 1, 1),
+            "Unlock_Plug": (5012, 2, meter.registerType.SINGLE_HOLDING, meter.registerDataType.UINT32, int, "Unlock Plug", "", 3, 1),
 
-            "Charging_Station_Enable": (5014, 2, meter.registerType.WRITE_HOLDING, meter.registerDataType.UINT32, int, "Inverter Max output active power percent", "%", 1, 0.1),
+            "Charging_Station_Enable": (5014, 2, meter.registerType.SINGLE_HOLDING, meter.registerDataType.UINT32, int, "Charging Station Enable", "", 4, 1),
 
-            "Set_Phase_Switch_Toggle": (5050, 2, meter.registerType.WRITE_HOLDING, meter.registerDataType.UINT32, int, "Inverter max output reactive power percent", "%", 1, 0.1),
+            "Set_Phase_Switch_Toggle": (5050, 2, meter.registerType.SINGLE_HOLDING, meter.registerDataType.UINT32, int, "Set Phase Switch Toggle", "0,1,2,3,4", 5, 1),
 
-            "Trigger_Phase_Switch": (5052, 2, meter.registerType.WRITE_HOLDING, meter.registerDataType.UINT32, int, "Inverter output power factor’s 10000 times", "%", 1, 1000),
+            "Trigger_Phase_Switch": (5052, 2, meter.registerType.SINGLE_HOLDING, meter.registerDataType.UINT32, int, "Trigger_Phase_Switch", "0,1", 6, 1),
 
-            "Failsafe_Current": (5016, 2, meter.registerType.WRITE_HOLDING, meter.registerDataType.UINT32, int, "ExportLimit_En/dis", "0...3", 1, 1),
-            "Failsafe_Timeout": (5018, 2, meter.registerType.WRITE_HOLDING, meter.registerDataType.UINT32, int, "ExportLimitPowerRate", "%", 1, 0.1),
-            "Failsafe_Persist": (5020, 2, meter.registerType.WRITE_HOLDING, meter.registerDataType.UINT16, int, "SOC_Min", "0", 2, 1),
+            "Failsafe_Current": (5016, 2, meter.registerType.SINGLE_HOLDING, meter.registerDataType.UINT32, float, "Failsafe Current", "A", 7, 0.001),
+            "Failsafe_Timeout": (5018, 2, meter.registerType.SINGLE_HOLDING, meter.registerDataType.UINT32, int, "Failsafe_Timeout", "sec", 8, 1),
+            "Failsafe_Persist": (5020, 2, meter.registerType.SINGLE_HOLDING, meter.registerDataType.UINT16, int, "Failsafe_Persist", "", 9, 1),
 
          
 

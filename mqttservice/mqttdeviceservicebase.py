@@ -14,6 +14,7 @@ from queue import Queue
 import time
 from datetime import datetime, timezone
 import growatt
+import kebakeycontactP30
 import sdm_modbus
 from sdm_modbus import meter
 from sdm_modbus.meter import registerType
@@ -183,6 +184,15 @@ class MqttDeviceServiceBase(object):
             )
         if metertype == "SPH_TL3_BH_UP_Meter":
             self.m_SMD_Device = growatt.SPH_TL3_BH_UP_Meter(
+                host=modbushost,
+                port=modbusport,
+                timeout=timeout,
+                framer=None,
+                unit=devid,
+                udp=False,
+            )
+        if metertype == "KeContactP30":
+                self.m_SMD_Device = kebakeycontactP30.KeContactP30(
                 host=modbushost,
                 port=modbusport,
                 timeout=timeout,
@@ -398,9 +408,16 @@ class MqttDeviceServiceBase(object):
             return ""
 
         def getWriteTopic(k: any) -> str:
+            def isWriteTopic(register:registerType):
+                regs = [registerType.HOLDING,registerType.SINGLE_HOLDING]
+                if register in regs:
+                    return True
+                return False
+            
             if k in self.m_SMD_Device.registers:
                 v = self.m_SMD_Device.registers[k]
-                if v[2] == registerType.HOLDING:
+                if isWriteTopic(v[2]):
+                # if v[2] == registerType.HOLDING:
                     return f"{self.getTopicByKey(k)}/set"
 
             return ""
