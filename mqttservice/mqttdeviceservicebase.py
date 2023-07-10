@@ -192,7 +192,7 @@ class MqttDeviceServiceBase(object):
                 udp=False,
             )
         if metertype == "KeContactP30":
-                self.m_SMD_Device = kebakeycontactP30.KeContactP30(
+            self.m_SMD_Device = kebakeycontactP30.KeContactP30(
                 host=modbushost,
                 port=modbusport,
                 timeout=timeout,
@@ -408,16 +408,16 @@ class MqttDeviceServiceBase(object):
             return ""
 
         def getWriteTopic(k: any) -> str:
-            def isWriteTopic(register:registerType):
-                regs = [registerType.HOLDING,registerType.SINGLE_HOLDING]
+            def isWriteTopic(register: registerType):
+                regs = [registerType.HOLDING, registerType.SINGLE_HOLDING]
                 if register in regs:
                     return True
                 return False
-            
+
             if k in self.m_SMD_Device.registers:
                 v = self.m_SMD_Device.registers[k]
                 if isWriteTopic(v[2]):
-                # if v[2] == registerType.HOLDING:
+                    # if v[2] == registerType.HOLDING:
                     return f"{self.getTopicByKey(k)}/set"
 
             return ""
@@ -596,7 +596,9 @@ class MqttDeviceServiceBase(object):
             )
 
             # Holding-Register nur einmal lesen und dann nicht mit batch=0 ausblenden
-
+            # Achtung, bei KebakeycontactP30 sind die Holding Registers die Input-Register
+            # hier müssen die Holding-Registers bleiben!!
+            # die Batch-Register müssen daher bleiben 
             self.setBatchfordallHoldingRegisters(0)
 
             self.m_MQTTPayload.update(jsonpayloadInput)
@@ -675,6 +677,9 @@ class MqttDeviceServiceBase(object):
         if not IsConnected:
             self.doSMDDeviceconnect()
             self.setDeviceState(DeviceState.ERROR)
+            logger.error(
+                f'device: {self.m_MQTT_NETID} error: Disconnected -> Try Reconnect')
+            logger.info(f'device: {self.m_MQTT_NETID} error: Disconnected -> Try Reconnect')
         else:
             self.setDeviceState(DeviceState.OK)
 

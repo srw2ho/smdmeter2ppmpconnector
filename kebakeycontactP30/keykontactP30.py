@@ -70,3 +70,8 @@ class KeContactP30(Keba):
          
 
         }
+
+# Batch nicht disable
+    def setBatchForRegisterByKey(self, key: str, setbatch: int = 0) -> bool:
+       
+        return False

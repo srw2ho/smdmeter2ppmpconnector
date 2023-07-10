@@ -77,7 +77,7 @@ MQTT_TLS_CERT = toml.get('mqtt.tls_cert', '')
 
 
 
-def run_SMD_meter(alias, modbushost, modbusport, devid, metertype, timeout, refresrate, readholding):
+def run_SMD_meter(alias, modbushost, modbusport, devid, metertype, timeout, refresrate):
     
     mqttDeviceService = MqttDeviceServiceBase(
         MQTT_HOST=MQTT_HOST,
@@ -104,12 +104,12 @@ def run_SMD_meter(alias, modbushost, modbusport, devid, metertype, timeout, refr
         IsConnected: bool = mqttDeviceService.isMeterConnected()
         
  
-        if not IsConnected:
-            mqttDeviceService.connectMeter()
-            time.sleep(connectTime)
-            logger.error(
-                f'device: {alias} error: Disconnected -> Try Reconnect')
-            logger.info(f'device: {alias} error: Disconnected -> Try Reconnect')
+        # if not IsConnected:
+        #     mqttDeviceService.connectMeter()
+        #     time.sleep(connectTime)
+        #     logger.error(
+        #         f'device: {alias} error: Disconnected -> Try Reconnect')
+        #     logger.info(f'device: {alias} error: Disconnected -> Try Reconnect')
 
         if isMQTTConnected:
             mqttDeviceService.doProcess()
@@ -126,13 +126,13 @@ def start_smdmeters():
     SDMMETETERS_CONNECTIONTIMEOUT = toml.get(
         'sdmmeters.connectiontimeout', [2])
     SDMMETERS_DEVICEID = toml.get('sdmmeters.deviceid', [2])
-    SDMMETERS_READHOLDING = toml.get('sdmmeters.readholding', [0])
+
 
     # create own thread for each SMD-device
-    for alias, host, port, devid, metertypes, timeout, refresrate, readholding in zip(SMDMETERS_MODBUSALIAS, SMDMETERS_MODBUSHOST, SDMMETERS_MODBUSPORT, SDMMETERS_DEVICEID, SMDMETERS_TYPE, SDMMETETERS_CONNECTIONTIMEOUT, SDMMETETERS_REFRESHRATE, SDMMETERS_READHOLDING):
+    for alias, host, port, devid, metertypes, timeout, refresrate  in zip(SMDMETERS_MODBUSALIAS, SMDMETERS_MODBUSHOST, SDMMETERS_MODBUSPORT, SDMMETERS_DEVICEID, SMDMETERS_TYPE, SDMMETETERS_CONNECTIONTIMEOUT, SDMMETETERS_REFRESHRATE):
         # create new thread for each OPC-UA client
         thread = Thread(target=run_SMD_meter, args=(alias,
-                                                    host, port, devid, metertypes, timeout, refresrate, readholding))
+                                                    host, port, devid, metertypes, timeout, refresrate))
 
         thread.start()
 
