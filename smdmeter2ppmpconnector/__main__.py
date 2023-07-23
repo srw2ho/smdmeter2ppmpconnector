@@ -93,6 +93,7 @@ def run_SMD_meter(alias, modbushost, modbusport, devid, metertype, timeout, refr
     mqttDeviceService.createtMeterByType(metertype=metertype,modbushost=modbushost,modbusport=modbusport,timeout=timeout,devid=devid)
     
     isConnected = mqttDeviceService.connectMeter()
+    # time.sleep(1)
     
       # doJson: bool = False
     RefreshTime: int = refresrate

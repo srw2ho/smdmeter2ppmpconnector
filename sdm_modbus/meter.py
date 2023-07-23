@@ -1,5 +1,6 @@
 import enum
 import importlib
+import logging
 import time
 
 from pymodbus.constants import Endian
@@ -11,6 +12,7 @@ from pymodbus.payload import BinaryPayloadDecoder
 from pymodbus.register_read_message import ReadInputRegistersResponse
 from pymodbus.register_read_message import ReadHoldingRegistersResponse
 
+logger = logging.getLogger("root")
 
 class connectionType(enum.Enum):
     RTU = 1
@@ -181,6 +183,7 @@ class Meter:
             if not self.connected():
                 self.connect()
                 time.sleep(0.1)
+                logger.error(f"_read_input_registers Error: not connected: device:{self.unit}")
                 continue
 
             result = self.client.read_input_registers(
@@ -203,6 +206,7 @@ class Meter:
             if not self.connected():
                 self.connect()
                 time.sleep(0.1)
+                logger.error(f"_read_holding_registers Error: not connected: device:{self.unit}")
                 continue
 
             result = self.client.read_holding_registers(
@@ -252,6 +256,7 @@ class Meter:
     def _decode_value(self, data, length, dtype, vtype):
         try:
             if dtype == registerDataType.FLOAT32:
+                # return round(vtype(data.decode_32bit_float()), 3)
                 return vtype(data.decode_32bit_float())
             elif dtype == registerDataType.INT32:
                 return vtype(data.decode_32bit_int())

@@ -137,6 +137,16 @@ class MqttDeviceServiceBase(object):
                 unit=devid,
                 udp=False,
             )
+        if metertype == "SDM630_V3":
+            self.m_SMD_Device = sdm_modbus.SDM630_V3(
+                host=modbushost,
+                port=modbusport,
+                timeout=timeout,
+                framer=None,
+                unit=devid,
+                udp=False,
+            )
+
         if metertype == "SDM230":
             self.m_SMD_Device = sdm_modbus.SDM230(
                 host=modbushost,
@@ -204,12 +214,24 @@ class MqttDeviceServiceBase(object):
             self.storeBatchfordallHoldingRegisters()
 
     def connectMeter(self) -> bool:
-        self.m_SMD_Device.connect()
-        if self.m_SMD_Device.connected():
-            self.doMQTTconnect()
-            self.setDeviceState(DeviceState.OK)
-        else:
-            self.setDeviceState(DeviceState.ERROR)
+
+        connectTryCounter = 3
+
+        while True:
+            self.m_SMD_Device.connect()
+            if self.m_SMD_Device.connected():
+                self.doMQTTconnect()
+                self.setDeviceState(DeviceState.OK)
+                break
+            else:
+                self.setDeviceState(DeviceState.ERROR)
+                if connectTryCounter > 0:
+                    time.sleep(0.5)
+                    self.m_SMD_Device.connect()
+
+                else:
+                    break
+                connectTryCounter=connectTryCounter-1
 
         return self.m_SMD_Device.connected()
 
@@ -598,7 +620,7 @@ class MqttDeviceServiceBase(object):
             # Holding-Register nur einmal lesen und dann nicht mit batch=0 ausblenden
             # Achtung, bei KebakeycontactP30 sind die Holding Registers die Input-Register
             # hier müssen die Holding-Registers bleiben!!
-            # die Batch-Register müssen daher bleiben 
+            # die Batch-Register müssen daher bleiben
             self.setBatchfordallHoldingRegisters(0)
 
             self.m_MQTTPayload.update(jsonpayloadInput)
@@ -678,8 +700,11 @@ class MqttDeviceServiceBase(object):
             self.doSMDDeviceconnect()
             self.setDeviceState(DeviceState.ERROR)
             logger.error(
-                f'device: {self.m_MQTT_NETID} error: Disconnected -> Try Reconnect')
-            logger.info(f'device: {self.m_MQTT_NETID} error: Disconnected -> Try Reconnect')
+                f"device: {self.m_MQTT_NETID} error: Disconnected -> Try Reconnect"
+            )
+            logger.info(
+                f"device: {self.m_MQTT_NETID} error: Disconnected -> Try Reconnect"
+            )
         else:
             self.setDeviceState(DeviceState.OK)
 
