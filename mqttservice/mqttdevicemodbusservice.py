@@ -15,6 +15,13 @@ import time
 from datetime import datetime, timezone
 import growatt
 import kebakeycontactP30
+from mqttservice.mqttdevicebase import (
+    SERVICE_DEVICE_NAME,
+    SERVICE_DEVICE_TYPE,
+    MqttDeviceServiceBase,
+)
+
+# from mqttservice.mqttdevicedaikinservice import MqttDeviceService
 import sdm_modbus
 from sdm_modbus import meter
 from sdm_modbus.meter import registerType
@@ -23,15 +30,11 @@ from pymodbus.register_write_message import WriteMultipleRegistersResponse
 
 # DEVICE_TYPE = "homemqtt"
 
-DEVICE_TYPE_CTRL = "homemqttcontrol"
-SERVICE_DEVICE_NAME = "homemqttservice"
-SERVICE_DEVICE_TYPE = "homemqttservice"
-SERVICE_TYPE_VERSION = "homemqttVersion"
 
 logger = logging.getLogger("root")
 
 
-class MqttDeviceServiceBase(object):
+class MqttDeviceModbusService(MqttDeviceServiceBase):
     """OPC-UA Client that provides publish/subscribe as well as polling capabilities
 
     Arguments:
@@ -49,73 +52,84 @@ class MqttDeviceServiceBase(object):
         MQTT_REFRESH_TIME=1.0,
         MQTT_NETID="PLC1",
     ):
-        self.m_MQTT_NETID = MQTT_NETID
-
-        self.m_INFODEBUGLEVEL = INFODEBUGLEVEL
-        self.m_MQTT_REFRESH_TIME = MQTT_REFRESH_TIME
-
-        self.m_last_MQTT_timestamp = 0
-        self.m_MQTT_QUEUE = Queue(maxsize=0)
-        self.m_MQTT_QUEUE_CHANGEDVALUES = Queue(maxsize=0)
-        self.m_server_timestamp = -1
-        self.m_MetaData = {}
-        self.m_metaDataOutFilePath = "./opcua2mqttservice_metadata.json"
-        self.m_configControlChannelSettingPath = ""
-        self.m_configControlChannel = dict()
-        self.m_onMqttConnected = False
+        super().__init__(
+            MQTT_HOST=MQTT_HOST,
+            MQTT_PORT=MQTT_PORT,
+            MQTT_USERNAME=MQTT_USERNAME,
+            MQTT_PASSWORD=MQTT_PASSWORD,
+            MQTT_TLS_CERT=MQTT_TLS_CERT,
+            INFODEBUGLEVEL=INFODEBUGLEVEL,
+            MQTT_REFRESH_TIME=MQTT_REFRESH_TIME,
+            MQTT_NETID=MQTT_NETID,
+        )
         self.m_SMD_Device = None
-        self.m_doReadHoldingRegister = True
-        self.m_MQTTPayload = {}
-        self.m_lastMQTTPayload = {}
-        self.m_lock = threading.RLock()
-        self.m_deviceState = DeviceState.UNKNOWN
-        self.m_doMQTTConnect = False
-        self.m_HoldingBatchRegister = {}
+        # self.m_MQTT_NETID = MQTT_NETID
 
-        self._mqtt_client = MQTTClient(
-            host=MQTT_HOST,
-            port=MQTT_PORT,
-            user=MQTT_USERNAME,
-            password=MQTT_PASSWORD,
-            tls_cert=MQTT_TLS_CERT,
-        )
-        self.m_device = Device(
-            additionalData={
-                "type": SERVICE_DEVICE_TYPE,
-                "hostname": self.m_MQTT_NETID,
-                "generalconfig": {
-                    "InterfaceType": f"{SERVICE_TYPE_VERSION}",
-                    "InterfaceVersion": "V1.0",
-                    "MetadataVersion": "V1.0",
-                },
-            },
-        )
+        # self.m_INFODEBUGLEVEL = INFODEBUGLEVEL
+        # self.m_MQTT_REFRESH_TIME = MQTT_REFRESH_TIME
 
-        self.m_ctrldevice = Device(
-            additionalData={
-                "type": DEVICE_TYPE_CTRL,
-                "hostname": SERVICE_DEVICE_NAME,
-            },
-        )
-        if self.m_MQTT_NETID != None:
-            name = f"{SERVICE_DEVICE_NAME}/{self.m_MQTT_NETID}"
-            ctrldevicenetid = f"{SERVICE_DEVICE_NAME}_{self.m_MQTT_NETID}"
+        # self.m_last_MQTT_timestamp = 0
+        # self.m_MQTT_QUEUE = Queue(maxsize=0)
+        # self.m_MQTT_QUEUE_CHANGEDVALUES = Queue(maxsize=0)
+        # self.m_server_timestamp = -1
+        # self.m_MetaData = {}
+        # self.m_metaDataOutFilePath = "./opcua2mqttservice_metadata.json"
+        # self.m_configControlChannelSettingPath = ""
+        # self.m_configControlChannel = dict()
+        # self.m_onMqttConnected = False
+        # self.m_SMD_Device = None
+        # self.m_doReadHoldingRegister = True
+        # self.m_MQTTPayload = {}
+        # self.m_lastMQTTPayload = {}
+        # self.m_lock = threading.RLock()
+        # self.m_deviceState = DeviceState.UNKNOWN
+        # self.m_doMQTTConnect = False
+        # self.m_HoldingBatchRegister = {}
 
-            self.m_device.setNetId(name)
+        # self._mqtt_client = MQTTClient(
+        #     host=MQTT_HOST,
+        #     port=MQTT_PORT,
+        #     user=MQTT_USERNAME,
+        #     password=MQTT_PASSWORD,
+        #     tls_cert=MQTT_TLS_CERT,
+        # )
+        # self.m_device = Device(
+        #     additionalData={
+        #         "type": SERVICE_DEVICE_TYPE,
+        #         "hostname": self.m_MQTT_NETID,
+        #         "generalconfig": {
+        #             "InterfaceType": f"{SERVICE_TYPE_VERSION}",
+        #             "InterfaceVersion": "V1.0",
+        #             "MetadataVersion": "V1.0",
+        #         },
+        #     },
+        # )
 
-            if os.name == "nt":
-                self.m_metaDataOutFilePath = (
-                    f"./{SERVICE_DEVICE_NAME}_{self.m_MQTT_NETID}_metadata.json"
-                )
-                self.m_configControlChannelSettingPath = f"./{SERVICE_DEVICE_NAME}_{self.m_MQTT_NETID}_configctrlchannel.json"
-            else:
-                self.m_metaDataOutFilePath = f"/etc/moehwald/{SERVICE_DEVICE_NAME}_{self.m_MQTT_NETID}_metadata.json"
-                self.m_configControlChannelSettingPath = f"/etc/moehwald/{SERVICE_DEVICE_NAME}_{self.m_MQTT_NETID}_configctrlchannel.json"
+        # self.m_ctrldevice = Device(
+        #     additionalData={
+        #         "type": DEVICE_TYPE_CTRL,
+        #         "hostname": SERVICE_DEVICE_NAME,
+        #     },
+        # )
+        # if self.m_MQTT_NETID != None:
+        #     name = f"{SERVICE_DEVICE_NAME}/{self.m_MQTT_NETID}"
+        #     ctrldevicenetid = f"{SERVICE_DEVICE_NAME}_{self.m_MQTT_NETID}"
 
-            self.m_ctrldevice.setNetId(ctrldevicenetid)
-            self.m_ctrldevice.sethostNameByNetId(self.m_MQTT_NETID)
+        #     self.m_device.setNetId(name)
 
-        self.readControlChannelFile()
+        #     if os.name == "nt":
+        #         self.m_metaDataOutFilePath = (
+        #             f"./{SERVICE_DEVICE_NAME}_{self.m_MQTT_NETID}_metadata.json"
+        #         )
+        #         self.m_configControlChannelSettingPath = f"./{SERVICE_DEVICE_NAME}_{self.m_MQTT_NETID}_configctrlchannel.json"
+        #     else:
+        #         self.m_metaDataOutFilePath = f"/etc/moehwald/{SERVICE_DEVICE_NAME}_{self.m_MQTT_NETID}_metadata.json"
+        #         self.m_configControlChannelSettingPath = f"/etc/moehwald/{SERVICE_DEVICE_NAME}_{self.m_MQTT_NETID}_configctrlchannel.json"
+
+        #     self.m_ctrldevice.setNetId(ctrldevicenetid)
+        #     self.m_ctrldevice.sethostNameByNetId(self.m_MQTT_NETID)
+
+        # self.readControlChannelFile()
 
     def getMeter(self) -> meter.Meter:
         return self.m_SMD_Device
@@ -213,8 +227,7 @@ class MqttDeviceServiceBase(object):
         if self.m_SMD_Device != None:
             self.storeBatchfordallHoldingRegisters()
 
-    def connectMeter(self) -> bool:
-
+    def connectDevice(self) -> bool:
         connectTryCounter = 3
 
         while True:
@@ -231,58 +244,58 @@ class MqttDeviceServiceBase(object):
 
                 else:
                     break
-                connectTryCounter=connectTryCounter-1
+                connectTryCounter = connectTryCounter - 1
 
         return self.m_SMD_Device.connected()
 
-    def isMeterConnected(self) -> bool:
+    def isDeviceConnected(self) -> bool:
         return self.m_SMD_Device.connected()
 
     def isMQTTConnected(self) -> bool:
         return self.m_onMqttConnected
 
-    def readControlChannelFile(self) -> bool:
-        try:
+    # def readControlChannelFile(self) -> bool:
+    #     try:
 
-            def getCtrlchannelResultdata(value) -> dict:
-                if "ctrlchannel" in value:
-                    return {"ctrlchannel": value["ctrlchannel"]}
-                return {}
+    #         def getCtrlchannelResultdata(value) -> dict:
+    #             if "ctrlchannel" in value:
+    #                 return {"ctrlchannel": value["ctrlchannel"]}
+    #             return {}
 
-            self.m_configControlChannel = {}
+    #         self.m_configControlChannel = {}
 
-            with open(self.m_configControlChannelSettingPath) as fObj:
-                # fObj = open(filename)
-                data = json.load(fObj)
-                resultdata = {
-                    key: getCtrlchannelResultdata(value) for key, value in data.items()
-                }
+    #         with open(self.m_configControlChannelSettingPath) as fObj:
+    #             # fObj = open(filename)
+    #             data = json.load(fObj)
+    #             resultdata = {
+    #                 key: getCtrlchannelResultdata(value) for key, value in data.items()
+    #             }
 
-                self.m_configControlChannel = resultdata
+    #             self.m_configControlChannel = resultdata
 
-                return True
-        except Exception as error:
-            # logger.error(f"readControlChannelFile Error: {error}")
+    #             return True
+    #     except Exception as error:
+    #         # logger.error(f"readControlChannelFile Error: {error}")
 
-            return False
+    #         return False
 
-    def writeMetaDataToFile(self) -> bool:
-        try:
-            json_object = json.dumps(self.m_MetaData, indent=4)
-            with open(self.m_metaDataOutFilePath, "w") as fObj:
-                fObj.write(json_object)
-                return True
-        except Exception as error:
-            logger.error(f"writeMetaDataToFile Error: {error}")
-            # logger.info(
-            #     f'readSequencerTemplates.writeMetaDataToFile Error: {error}')
-            return False
+    # def writeMetaDataToFile(self) -> bool:
+    #     try:
+    #         json_object = json.dumps(self.m_MetaData, indent=4)
+    #         with open(self.m_metaDataOutFilePath, "w") as fObj:
+    #             fObj.write(json_object)
+    #             return True
+    #     except Exception as error:
+    #         logger.error(f"writeMetaDataToFile Error: {error}")
+    #         # logger.info(
+    #         #     f'readSequencerTemplates.writeMetaDataToFile Error: {error}')
+    #         return False
 
-    def getTopicByKey(self, key: str) -> str:
-        replaced = key
-        topic = f"mh/{SERVICE_DEVICE_NAME}/{self.m_MQTT_NETID}/data/{replaced}"
+    # def getTopicByKey(self, key: str) -> str:
+    #     replaced = key
+    #     topic = f"mh/{SERVICE_DEVICE_NAME}/{self.m_MQTT_NETID}/data/{replaced}"
 
-        return topic
+    #     return topic
 
     def doMQTTProcessCommand(self, command):
         """Wait for items in the queue and process these items"""
@@ -358,21 +371,21 @@ class MqttDeviceServiceBase(object):
         except Exception as exception:
             logger.error(f"MQTTConsumeQueue Parse error: {exception}")
 
-    def getMetaDataTopic(self) -> str:
-        topic = f"mh/{SERVICE_DEVICE_NAME}/{self.m_MQTT_NETID}/metadata"
-        return topic
+    # def getMetaDataTopic(self) -> str:
+    #     topic = f"mh/{SERVICE_DEVICE_NAME}/{self.m_MQTT_NETID}/metadata"
+    #     return topic
 
-    def MQTTConsumeQueue(self):
-        """Wait for items in the queue and process these items"""
-        while True:
-            try:
-                # self._MQTT_QUEUE.empty
-                command = self.m_MQTT_QUEUE.get()
-                self.doMQTTProcessCommand(command)
-                # sleep(0.05)
+    # def MQTTConsumeQueue(self):
+    #     """Wait for items in the queue and process these items"""
+    #     while True:
+    #         try:
+    #             # self._MQTT_QUEUE.empty
+    #             command = self.m_MQTT_QUEUE.get()
+    #             self.doMQTTProcessCommand(command)
+    #             # sleep(0.05)
 
-            except Exception as exception:
-                logger.error(f"MQTTConsumeQueue Parse error: {exception}")
+    #         except Exception as exception:
+    #             logger.error(f"MQTTConsumeQueue Parse error: {exception}")
 
     def on_connect(self, client, userdata, flags, rc):
         logger.info(f"MQTT-Client: on_connect -> publish_MQTTMetaData()")
@@ -387,6 +400,8 @@ class MqttDeviceServiceBase(object):
         self.doPublishPayload(allregisterPayload, retained=True)
 
         self.publish_MQTTMetaData()
+        self.subscribeMQTTWriteTopis()
+                
         logger.info(f"MQTT-Client: on_connect -> publish_cached_values()")
 
         # self.publish_cached_values()
@@ -486,9 +501,13 @@ class MqttDeviceServiceBase(object):
 
             self.m_MetaData = jsondatapayload
 
+               
             values = json.dumps(jsondatapayload)
 
             self._mqtt_client.publish(topic, values, retain=True)
+
+
+
             self.writeMetaDataToFile()
 
             # mqtt_client.subscribe(DEVICE_GATEWAY.control_set_topic(), handle_mqtt_commands)
@@ -497,13 +516,15 @@ class MqttDeviceServiceBase(object):
             self.m_lock.release()
             return retValue
 
-    def getDeviceServicesTopic(self) -> str:
-        topic = f"mh/DeviceServices/{self.m_MQTT_NETID}"
-        return topic
+    # def getDeviceServicesTopic(self) -> str:
+    #     topic = f"mh/DeviceServices/{self.m_MQTT_NETID}"
+    #     return topic
 
-    def on_disconnect(self, client, userdata, rc):
-        self.m_onMqttConnected = False
-        logger.info(f"MQTT-Client: on_disconnect")
+    # def on_disconnect(self, client, userdata, rc):
+    #     self.m_onMqttConnected = False
+    #     logger.info(f"MQTT-Client: on_disconnect")
+
+
 
     def doSMDDeviceconnect(self):
         IsConnected: bool = self.m_SMD_Device.connected()
@@ -517,79 +538,79 @@ class MqttDeviceServiceBase(object):
                 f"device: {self.m_MQTT_NETID} error: Disconnected -> Try Rconnect"
             )
 
-    def doMQTTconnect(self):
-        """Establish connection to MQTT-Broker"""
+    # def doMQTTconnect(self):
+    #     """Establish connection to MQTT-Broker"""
 
-        if not self.m_doMQTTConnect:
-            self.m_doMQTTConnect = True
-            infoTopic = self.m_device.info_topic()
-            self._mqtt_client.last_will(
-                infoTopic,
-                machine_message_generator(
-                    self.m_device, state=DeviceState.ERROR, code="offline"
-                ),
-                retain=True,
-            )
-            # connect to MQTT
-            self._mqtt_client.connect(
-                connectHandler=self.on_connect, disconnectHandler=self.on_disconnect
-            )
+    #     if not self.m_doMQTTConnect:
+    #         self.m_doMQTTConnect = True
+    #         infoTopic = self.m_device.info_topic()
+    #         self._mqtt_client.last_will(
+    #             infoTopic,
+    #             machine_message_generator(
+    #                 self.m_device, state=DeviceState.ERROR, code="offline"
+    #             ),
+    #             retain=True,
+    #         )
+    #         # connect to MQTT
+    #         self._mqtt_client.connect(
+    #             connectHandler=self.on_connect, disconnectHandler=self.on_disconnect
+    #         )
 
-            # delete previous Topic
-            # self._mqtt_client.publish(self.getMetaDataTopic(), None, retain=True)
+    #         # delete previous Topic
+    #         # self._mqtt_client.publish(self.getMetaDataTopic(), None, retain=True)
 
-            threading.Thread(target=self.MQTTConsumeQueue).start()
+    #         threading.Thread(target=self.MQTTConsumeQueue).start()
 
-    def getMetaKeyByKey(self, key: str) -> str:
-        return f"@{self.m_MQTT_NETID}.{key}"
+    # def getMetaKeyByKey(self, key: str) -> str:
+    #     return f"@{self.m_MQTT_NETID}.{key}"
 
-    def getActTime(self):
-        timestamp = datetime.now(timezone.utc).astimezone()
-        posix_timestamp = datetime.timestamp(timestamp) * 1000
-        return posix_timestamp
+    # def getActTime(self):
+    #     timestamp = datetime.now(timezone.utc).astimezone()
+    #     posix_timestamp = datetime.timestamp(timestamp) * 1000
+    #     return posix_timestamp
 
-    def getPayloadfromValue(self, identifier: str, value: any) -> dict:
-        try:
-            payload = {}
-            payload = {
-                "metakey": self.getMetaKeyByKey(identifier),
-                "identifier": identifier,
-                "posix_timestamp": self.getActTime(),
-                "value": value,
-            }
+    # def getPayloadfromValue(self, identifier: str, value: any) -> dict:
+    #     try:
+    #         payload = {}
+    #         payload = {
+    #             "metakey": self.getMetaKeyByKey(identifier),
+    #             "identifier": identifier,
+    #             "posix_timestamp": self.getActTime(),
+    #             "value": value,
+    #         }
 
-        finally:
-            return payload
+    #     finally:
+    #         return payload
 
-    def doPublishPayload(self, jsonpayload: dict, retained: bool = False):
-        def isValueChanged(k: str, value: any):
-            if k in self.m_lastMQTTPayload:
-                return self.m_lastMQTTPayload[k] != value
-            return True
+    # def doPublishPayload(self, jsonpayload: dict, retained: bool = False):
+    #     def isValueChanged(k: str, value: any):
+    #         if k in self.m_lastMQTTPayload:
+    #             return self.m_lastMQTTPayload[k] != value
+    #         return True
 
-        try:
-            self.m_lock.acquire()
-            if self._mqtt_client.isConnected():
-                changedPayload = {
-                    k: self.getPayloadfromValue(k, v)
-                    for k, v in jsonpayload.items()
-                    if isValueChanged(k, v)
-                }
+    #     try:
+    #         self.m_lock.acquire()
+    #         if self._mqtt_client.isConnected():
+    #             changedPayload = {
+    #                 k: self.getPayloadfromValue(k, v)
+    #                 for k, v in jsonpayload.items()
+    #                 if isValueChanged(k, v)
+    #             }
 
-                # write changed Values over MQTT
-                for k, v in changedPayload.items():
-                    self._mqtt_client.publish(
-                        self.getTopicByKey(k),
-                        json.dumps(v),
-                        retain=retained,
-                    )
-                self.m_lastMQTTPayload.update(jsonpayload)
-            else:
-                logger.error(
-                    f"publish_single_cached_value: error-> MQTT is not connected"
-                )
-        finally:
-            self.m_lock.release()
+    #             # write changed Values over MQTT
+    #             for k, v in changedPayload.items():
+    #                 self._mqtt_client.publish(
+    #                     self.getTopicByKey(k),
+    #                     json.dumps(v),
+    #                     retain=retained,
+    #                 )
+    #             self.m_lastMQTTPayload.update(jsonpayload)
+    #         else:
+    #             logger.error(
+    #                 f"publish_single_cached_value: error-> MQTT is not connected"
+    #             )
+    #     finally:
+    #         self.m_lock.release()
 
     def storeBatchfordallHoldingRegisters(self) -> None:
         self.m_HoldingBatchRegister = {
@@ -695,6 +716,8 @@ class MqttDeviceServiceBase(object):
             return self.m_MQTTPayload
 
     def doProcess(self):
+
+        
         IsConnected: bool = self.m_SMD_Device.connected()
         if not IsConnected:
             self.doSMDDeviceconnect()
@@ -709,19 +732,11 @@ class MqttDeviceServiceBase(object):
             self.setDeviceState(DeviceState.OK)
 
         if IsConnected:
-            self.readInputRegisters()
+            difference_act = self.m_TimeSpan.getTimeSpantoActTime()
 
-    def setDeviceState(self, devicestate: DeviceState = DeviceState.UNKNOWN):
-        if self.m_deviceState != devicestate:
-            if self._mqtt_client.isConnected():
-                self.m_deviceState = devicestate
-                self._mqtt_client.publish(
-                    self.m_device.info_topic(),
-                    machine_message_generator(self.m_device, state=devicestate),
-                    retain=True,
-                )
-                self._mqtt_client.publish(
-                    self.m_ctrldevice.info_topic(),
-                    machine_message_generator(self.m_ctrldevice, state=devicestate),
-                    retain=True,
-                )
+            hours_actsecs = self.m_TimeSpan.getTimediffernceintoSecs(difference_act)
+            if hours_actsecs >= self.m_MQTT_REFRESH_TIME:
+                self.readInputRegisters()
+                timestamp = datetime.now(timezone.utc).astimezone()
+                self.m_TimeSpan.setActTime(timestamp)
+

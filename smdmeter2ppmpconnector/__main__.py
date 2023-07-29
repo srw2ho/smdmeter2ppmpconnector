@@ -1,3 +1,4 @@
+import asyncio
 import json
 import sys
 import logging
@@ -6,7 +7,13 @@ import os
 import configparser
 from queue import Queue
 from threading import Thread
-from mqttservice.mqttdeviceservicebase import MqttDeviceServiceBase
+from daikin_residential.daikinaltherma.climate import DaikinClimate
+from daikin_residential.daikinaltherma.daikin_api import DaikinApi
+from daikin_residential.daikinaltherma.daikin_base import Appliance
+from daikin_residential.daikinaltherma.sensor import DaikinSensor
+from daikin_residential.daikinaltherma.water_heater import DaikinWaterTank
+from mqttservice.mqttdevicedaikinservice import MqttDeviceDaikinService
+from mqttservice.mqttdevicemodbusservice import MqttDeviceModbusService
 import sdm_modbus
 
 
@@ -79,7 +86,7 @@ MQTT_TLS_CERT = toml.get('mqtt.tls_cert', '')
 
 def run_SMD_meter(alias, modbushost, modbusport, devid, metertype, timeout, refresrate):
     
-    mqttDeviceService = MqttDeviceServiceBase(
+    mqttDeviceService = MqttDeviceModbusService(
         MQTT_HOST=MQTT_HOST,
         MQTT_PORT=MQTT_PORT,
         MQTT_USERNAME=MQTT_USERNAME,
@@ -92,32 +99,26 @@ def run_SMD_meter(alias, modbushost, modbusport, devid, metertype, timeout, refr
     
     mqttDeviceService.createtMeterByType(metertype=metertype,modbushost=modbushost,modbusport=modbusport,timeout=timeout,devid=devid)
     
-    isConnected = mqttDeviceService.connectMeter()
+    isConnected = mqttDeviceService.connectDevice()
     # time.sleep(1)
     
       # doJson: bool = False
-    RefreshTime: int = refresrate
+    RefreshTime: float = 0.2
     connectTime: int = timeout
 
     while True:
 
         isMQTTConnected = mqttDeviceService.isMQTTConnected()
-        IsConnected: bool = mqttDeviceService.isMeterConnected()
+        IsConnected: bool = mqttDeviceService.isDeviceConnected()
         
- 
-        # if not IsConnected:
-        #     mqttDeviceService.connectMeter()
-        #     time.sleep(connectTime)
-        #     logger.error(
-        #         f'device: {alias} error: Disconnected -> Try Reconnect')
-        #     logger.info(f'device: {alias} error: Disconnected -> Try Reconnect')
 
         if isMQTTConnected:
             mqttDeviceService.doProcess()
+        # time.sleep(0.2)
         time.sleep(RefreshTime)
 
 
-def start_smdmeters():
+async def start_smdmeters():
 
     SMDMETERS_MODBUSHOST = toml.get('sdmmeters.tcpmodbushost', ['localhost'])
     SMDMETERS_MODBUSALIAS = toml.get('sdmmeters.tcpmodbusalias', ['SDM630_1'])
@@ -138,11 +139,44 @@ def start_smdmeters():
         thread.start()
 
 
+
+async def runDaikin():
+    # await self.m_daikinAPI.retrieveAccessToken("wilschneider@kabelmail.de", "niknak@01W")
+                 
+    DAIKINUSER = toml.get('daikin.user', '')
+    DAIKINPW = toml.get('daikin.password', '')
+    DAIKINREFRESHRATE= toml.get('daikin.refreshrate', 5)
+    RefreshTime: float = 0.2
+        
+    mqttDeviceService = MqttDeviceDaikinService(
+        MQTT_HOST=MQTT_HOST,
+        MQTT_PORT=MQTT_PORT,
+        MQTT_USERNAME=MQTT_USERNAME,
+        MQTT_PASSWORD=MQTT_PASSWORD,
+        MQTT_TLS_CERT=MQTT_TLS_CERT,
+        INFODEBUGLEVEL=1,
+        MQTT_REFRESH_TIME=DAIKINREFRESHRATE,
+        MQTT_NETID="DaikinWP",
+        DAIKINUSER=DAIKINUSER,
+        DAIKINPW=DAIKINPW
+    )      
+    
+    await mqttDeviceService.connectDevice()
+    
+    while True:
+        await mqttDeviceService.doProcess()
+        time.sleep(RefreshTime)
+
 def main():
 
-    start_smdmeters()
+    # start_smdmeters()
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(start_smdmeters())
 
-    # mqtt_client.start()
+    loop.run_until_complete(runDaikin())
+    # asyncio.run(runDaikin())
+    
+    loop.close()
 
 
 if __name__ == '__main__':

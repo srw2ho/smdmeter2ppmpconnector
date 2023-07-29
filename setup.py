@@ -5,6 +5,7 @@ NAME = "smdmeter2ppmpconnector"
 DEPENDENCIES_ARTIFACTORY = [
     'pymodbus',
     'pyserial-asyncio',
+    'oic'
 ]
 
 DEPENDENCIES_GITHUB = {
