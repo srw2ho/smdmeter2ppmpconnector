@@ -63,7 +63,6 @@ class MqttDeviceDaikinService(MqttDeviceServiceBase):
         self.m_daikinUser = DAIKINUSER
         self.m_daikinPW = DAIKINPW
 
-
         # self._MQTT_REFRESH_TIME = MQTT_REFRESH_TIME
 
     def LogInfo(self, jsonpayloadInput: dict) -> dict:
@@ -71,8 +70,8 @@ class MqttDeviceDaikinService(MqttDeviceServiceBase):
             logger.info(f"device: {self.m_MQTT_NETID} Read Input Registers:")
 
             for k, v in jsonpayloadInput.items():
-                value:any = v
-                unit:str = ""
+                value: any = v
+                unit: str = ""
                 # if v is isinstance (DaikinSensor):
                 #     sensor: DaikinSensor = self.m_Sensors[k]
                 #     value = sensor.state
@@ -81,16 +80,13 @@ class MqttDeviceDaikinService(MqttDeviceServiceBase):
                 #     sensor: DaikinSensor = self.m_Sensors[k]
                 #     value = sensor.state
                 #     unit=sensor.unit_of_measurement
-                
+
                 if type(value) is list or type(value) is dict:
                     logger.info(f"\t{k}: {str(value)} {unit}")
                 elif type(value) is float:
                     logger.info(f"\t{k}: {value:.2f} {unit}")
                 else:
                     logger.info(f"\t{k}: {value} {unit}")
-                    
-         
-
 
     async def connectDevice(self) -> bool:
         connectTryCounter = 3
@@ -138,17 +134,16 @@ class MqttDeviceDaikinService(MqttDeviceServiceBase):
         return self.m_daikinAPI.isTokenretrieved()
 
     async def doWriteMQTTProcessCommand(self, identifier: str, value: any) -> bool:
-
         doUpdate = False
 
         if identifier == "WATER.target_temperature":
             await self.m_daikinwater.async_set_tank_temperature(value)
             doUpdate = True
-  
+
         if identifier == "WATER.tank_state":
             await self.m_daikinwater.async_set_tank_state(value)
-            doUpdate = True    
-            
+            doUpdate = True
+
         if identifier == "CLIMATE.hvac_mode":
             await self.m_daikinclimate.async_set_hvac_mode(value)
             doUpdate = True
@@ -160,7 +155,7 @@ class MqttDeviceDaikinService(MqttDeviceServiceBase):
 
         if identifier == "CLIMATE.target_temperature":
             await self.m_daikinclimate.async_set_temperature(
-                {"hvac_mode": "heat", "temperature": value}
+                hvac_mode=self.m_daikinclimate.hvac_mode, temperature=value
             )
 
             doUpdate = True
@@ -171,7 +166,14 @@ class MqttDeviceDaikinService(MqttDeviceServiceBase):
 
         if identifier == "CLIMATE.turn_off":
             await self.m_daikinclimate.async_turn_off()
+            doUpdate = True
 
+        if identifier == "WATER.turn_on":
+            await self.m_daikinwater.async_turn_on()
+            doUpdate = True
+
+        if identifier == "WATER.turn_off":
+            await self.m_daikinwater.async_turn_off()
             doUpdate = True
 
         return doUpdate
@@ -195,11 +197,10 @@ class MqttDeviceDaikinService(MqttDeviceServiceBase):
                         if metaKey in self.m_MetaData.keys():
                             metaValue = self.m_MetaData[metaKey]
                             if metaValue["writetopic"] != "":
-                               
                                 doUpdate = await self.doWriteMQTTProcessCommand(
                                     identifier, value
                                 )
-        
+
                         if not doUpdate:
                             if self.m_INFODEBUGLEVEL > 0:
                                 logger.info(
@@ -294,21 +295,21 @@ class MqttDeviceDaikinService(MqttDeviceServiceBase):
         ClimateTopics = {
             "CLIMATE.turn_on": {
                 "view": "CLIMATE.turn_on",
-                "vartype": "double",
+                "vartype": "bool",
                 "writable": True,
                 "unit": "",
-                "value": 0,
+                "value": self.m_daikinclimate.hvac_mode != "off",
             },
             "CLIMATE.turn_off": {
                 "view": "CLIMATE.turn_off",
-                "vartype": "double",
+                "vartype": "bool",
                 "writable": True,
                 "unit": "",
-                "value": 0,
+                "value": self.m_daikinclimate.hvac_mode == "off",
             },
             "CLIMATE.preset_mode": {
                 "view": "CLIMATE.preset_mode",
-                "vartype": "double",
+                "vartype": "str",
                 "writable": True,
                 "unit": "",
                 "value": self.m_daikinclimate.preset_mode,
@@ -322,7 +323,7 @@ class MqttDeviceDaikinService(MqttDeviceServiceBase):
             },
             "CLIMATE.hvac_mode": {
                 "view": "CLIMATE.hvac_mode",
-                "vartype": "double",
+                "vartype": "str",
                 "writable": True,
                 "unit": "",
                 "value": self.m_daikinclimate.hvac_mode,
@@ -331,14 +332,14 @@ class MqttDeviceDaikinService(MqttDeviceServiceBase):
                 "view": "CLIMATE.temperature",
                 "vartype": "double",
                 "writable": True,
-                "unit": "",
+                "unit": self.m_daikinclimate.temperature_unit,
                 "value": self.m_daikinclimate.current_temperature,
             },
             "CLIMATE.target_temperature_step": {
                 "view": "CLIMATE.target_temperature_step",
                 "vartype": "double",
                 "writable": False,
-                "unit": "",
+                "unit": self.m_daikinclimate.temperature_unit,
                 "value": self.m_daikinclimate.target_temperature_step,
             },
             "CLIMATE.target_temperature": {
@@ -352,41 +353,39 @@ class MqttDeviceDaikinService(MqttDeviceServiceBase):
                 "view": "CLIMATE.min_temp",
                 "vartype": "double",
                 "writable": False,
-                "unit": "",
+                "unit": self.m_daikinclimate.temperature_unit,
                 "value": self.m_daikinclimate.min_temp,
             },
             "CLIMATE.max_temp": {
                 "view": "CLIMATE.max_temp",
                 "vartype": "double",
                 "writable": False,
-                "unit": "",
+                "unit": self.m_daikinclimate.temperature_unit,
                 "value": self.m_daikinclimate.max_temp,
             },
-            "CLIMATE.temperature_unit": {
-                "view": "CLIMATE.temperature_unit",
-                "vartype": "double",
-                "writable": False,
-                "unit": "",
-                "value": self.m_daikinclimate.temperature_unit,
-            },
+            # "CLIMATE.temperature_unit": {
+            #     "view": "CLIMATE.temperature_unit",
+            #     "vartype": "str",
+            #     "writable": False,
+            #     "unit": "",
+            #     "value": self.m_daikinclimate.temperature_unit,
+            # },
         }
 
         return ClimateTopics
 
     def getWaterMetaData(self) -> dict:
-        
         WaterTopics = {
-           
             "WATER.extra_state_attributes": {
                 "view": "WATER.extra_state_attributes",
-                "vartype": "double",
+                "vartype": "dict",
                 "writable": False,
                 "unit": "",
                 "value": self.m_daikinwater.extra_state_attributes,
             },
             "WATER.operation_list": {
                 "view": "WATER.operation_list",
-                "vartype": "double",
+                "vartype": "list[str]",
                 "writable": False,
                 "unit": "",
                 "value": self.m_daikinwater.operation_list,
@@ -395,7 +394,7 @@ class MqttDeviceDaikinService(MqttDeviceServiceBase):
                 "view": "WATER.temperature",
                 "vartype": "double",
                 "writable": True,
-                "unit": "",
+                "unit": self.m_daikinwater.temperature_unit,
                 "value": self.m_daikinwater.current_temperature,
             },
             "WATER.tank_state": {
@@ -405,39 +404,45 @@ class MqttDeviceDaikinService(MqttDeviceServiceBase):
                 "unit": "",
                 "value": self.m_daikinwater.current_operation,
             },
-
             "WATER.target_temperature": {
                 "view": "WATER.target_temperature",
                 "vartype": "double",
                 "writable": True,
-                "unit": "",
+                "unit": self.m_daikinwater.temperature_unit,
                 "value": self.m_daikinwater.target_temperature,
             },
             "WATER.min_temp": {
                 "view": "WATER.min_temp",
                 "vartype": "double",
                 "writable": False,
-                "unit": "",
+                "unit": self.m_daikinwater.temperature_unit,
                 "value": self.m_daikinwater.min_temp,
             },
             "WATER.max_temp": {
                 "view": "WATER.max_temp",
                 "vartype": "double",
                 "writable": False,
-                "unit": "",
+                "unit": self.m_daikinwater.temperature_unit,
                 "value": self.m_daikinwater.max_temp,
             },
-            "WATER.temperature_unit": {
-                "view": "WATER.temperature_unit",
-                "vartype": "double",
-                "writable": False,
+            "WATER.turn_off": {
+                "view": "WATER.turn_off",
+                "vartype": "bool",
+                "writable": True,
                 "unit": "",
-                "value": self.m_daikinwater.temperature_unit,
+                "value": self.m_daikinwater.current_operation == "off",
+            },
+            "WATER.turn_on": {
+                "view": "WATER.turn_on",
+                "vartype": "bool",
+                "writable": True,
+                "unit": "",
+                "value": self.m_daikinwater.current_operation != "off",
             },
         }
 
         return WaterTopics
-    
+
     def publish_MQTTMetaData(self):
         """Publish all MetaData values that are currently cached"""
         #    topic = f"mh/opcua2mqtt/{self.MQTT_NETID}/data/{replaced}"
@@ -547,7 +552,7 @@ class MqttDeviceDaikinService(MqttDeviceServiceBase):
                 for k, v in self.getWaterMetaData().items()
             }
             self.m_MetaData.update(climatedatapayload)
-            
+
             self.m_MetaData.update(waterdatapayload)
 
             values = json.dumps(self.m_MetaData)
@@ -581,7 +586,7 @@ class MqttDeviceDaikinService(MqttDeviceServiceBase):
                 for k, v in self.getWaterMetaData().items()
                 # if v["writable"]
             }
-                        
+
             jsonpayloadInput.update(jsonclimatepayload)
             jsonpayloadInput.update(jsonwaterpayload)
 
@@ -593,6 +598,12 @@ class MqttDeviceDaikinService(MqttDeviceServiceBase):
             return self.m_MQTTPayload
 
     def readInputRegisters(self) -> dict:
+        def filteredpayload(value: any) -> bool:
+            if type(value) is list or type(value) is dict or type(value) is str:
+                return False
+
+            return True
+
         try:
             self.m_lock.acquire()
             jsonpayloadInput = {}
@@ -611,7 +622,7 @@ class MqttDeviceDaikinService(MqttDeviceServiceBase):
                 for k, v in self.getWaterMetaData().items()
                 # if not v["writable"]
             }
-            
+
             jsonpayloadInput.update(jsonclimatepayload)
             jsonpayloadInput.update(jsonwaterepayload)
 
@@ -620,8 +631,11 @@ class MqttDeviceDaikinService(MqttDeviceServiceBase):
             if self._mqtt_client and self._mqtt_client.isConnected():
                 if len(jsonpayloadInput.keys()) > 0:
                     acttime = local_now()
+                    filteredjsonpayloadInput = {
+                        k: v for k, v in jsonpayloadInput.items() if filteredpayload(v)
+                    }
                     simplevars = SimpleVariables(
-                        self.m_ctrldevice, jsonpayloadInput, acttime
+                        self.m_ctrldevice, filteredjsonpayloadInput, acttime
                     )
                     ppmppayload = simplevars.to_ppmp()
                     self._mqtt_client.publish(
@@ -639,18 +653,7 @@ class MqttDeviceDaikinService(MqttDeviceServiceBase):
         # timestamp = datetime.now(timezone.utc).astimezone()
 
         IsConnected: bool = self.isDeviceConnected()
-        if not IsConnected:
-            await self.connectDevice()
-            self.setDeviceState(DeviceState.ERROR)
-            logger.error(
-                f"device: {self.m_MQTT_NETID} error: Disconnected -> Try Reconnect"
-            )
-            logger.info(
-                f"device: {self.m_MQTT_NETID} error: Disconnected -> Try Reconnect"
-            )
-        else:
-            self.setDeviceState(DeviceState.OK)
-
+        
         if not self.m_MQTT_QUEUE.empty():
             command = self.m_MQTT_QUEUE.get()
             await self.doMQTTProcessCommand(command)
@@ -660,12 +663,21 @@ class MqttDeviceDaikinService(MqttDeviceServiceBase):
 
             hours_actsecs = self.m_TimeSpan.getTimediffernceintoSecs(difference_act)
             if hours_actsecs >= self.m_MQTT_REFRESH_TIME:
-                await self.m_daikinAPI.async_update()
-                self.readInputRegisters()
-                timestamp = datetime.now(timezone.utc).astimezone()
-                self.m_TimeSpan.setActTime(timestamp)
-
+                if IsConnected:
+                    await self.m_daikinAPI.async_update()
+                    self.readInputRegisters()
+                    timestamp = datetime.now(timezone.utc).astimezone()
+                    self.m_TimeSpan.setActTime(timestamp)
+                else:
+                    await self.connectDevice()
+                    self.setDeviceState(DeviceState.ERROR)
+                    logger.error(
+                        f"device: {self.m_MQTT_NETID} error: Disconnected -> Try Reconnect"
+                    )
+                    logger.info(
+                        f"device: {self.m_MQTT_NETID} error: Disconnected -> Try Reconnect"
+                    )
 
 
     def doStartProcessCommandThred(self):
-      pass
+        pass

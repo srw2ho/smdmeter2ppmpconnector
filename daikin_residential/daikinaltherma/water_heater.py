@@ -160,7 +160,15 @@ class DaikinWaterTank(object):
         if self._device.getValue(ATTR_TANK_ON_OFF) != ATTR_STATE_ON:
             return None
         return await self._device.setValue(ATTR_TANK_TARGET_TEMPERATURE, int(value))
+    
+    async def async_turn_on(self):
+        """Turn tank on."""
+        await self._device.setValue(ATTR_TANK_ON_OFF, ATTR_STATE_ON)
 
+    async def async_turn_off(self):
+        """Turn tank off."""
+        await self._device.setValue(ATTR_TANK_ON_OFF, ATTR_STATE_OFF)
+        
     async def async_set_tank_state(self, tank_state):
         """Set new tank state."""
         _LOGGER.debug("Set tank state: %s", tank_state)

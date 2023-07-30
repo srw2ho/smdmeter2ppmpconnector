@@ -669,11 +669,11 @@ class MqttDeviceModbusService(MqttDeviceServiceBase):
                 ) = self.m_SMD_Device.registers[k]
 
                 if type(fmt) is list or type(fmt) is dict:
-                    logger.info(f"\t{rtype}-{label}: {fmt[str(v)]}")
+                    logger.info(f"\t{k} :{rtype}- {label}: {fmt[str(v)]}")
                 elif vtype is float:
-                    logger.info(f"\t{rtype}-{label}: {v:.2f}{fmt}")
+                    logger.info(f"\t{k} :{rtype}- {label}: {v:.2f} {fmt}")
                 else:
-                    logger.info(f"\t{rtype}-{label}: {v}{fmt}")
+                    logger.info(f"\t{k} :{rtype}- {label}: {v} {fmt}")
 
     def readInputRegisters(self) -> dict:
         try:
@@ -681,6 +681,7 @@ class MqttDeviceModbusService(MqttDeviceServiceBase):
             jsonpayloadInput = self.m_SMD_Device.read_all(
                 sdm_modbus.registerType.INPUT, scaling=True
             )
+                       
             self.LogInfo(jsonpayloadInput)
 
             if self._mqtt_client and self._mqtt_client.isConnected():
@@ -719,24 +720,34 @@ class MqttDeviceModbusService(MqttDeviceServiceBase):
 
         
         IsConnected: bool = self.m_SMD_Device.connected()
-        if not IsConnected:
-            self.doSMDDeviceconnect()
-            self.setDeviceState(DeviceState.ERROR)
-            logger.error(
-                f"device: {self.m_MQTT_NETID} error: Disconnected -> Try Reconnect"
-            )
-            logger.info(
-                f"device: {self.m_MQTT_NETID} error: Disconnected -> Try Reconnect"
-            )
-        else:
-            self.setDeviceState(DeviceState.OK)
+        # if not IsConnected:
+        #     self.doSMDDeviceconnect()
+        #     self.setDeviceState(DeviceState.ERROR)
+        #     logger.error(
+        #         f"device: {self.m_MQTT_NETID} error: Disconnected -> Try Reconnect"
+        #     )
+        #     logger.info(
+        #         f"device: {self.m_MQTT_NETID} error: Disconnected -> Try Reconnect"
+        #     )
+        # else:
+        #     self.setDeviceState(DeviceState.OK)
 
         if IsConnected:
             difference_act = self.m_TimeSpan.getTimeSpantoActTime()
 
             hours_actsecs = self.m_TimeSpan.getTimediffernceintoSecs(difference_act)
             if hours_actsecs >= self.m_MQTT_REFRESH_TIME:
-                self.readInputRegisters()
-                timestamp = datetime.now(timezone.utc).astimezone()
-                self.m_TimeSpan.setActTime(timestamp)
+                if IsConnected:
+                    self.readInputRegisters()
+                    timestamp = datetime.now(timezone.utc).astimezone()
+                    self.m_TimeSpan.setActTime(timestamp)
 
+                else:
+                    self.doSMDDeviceconnect()
+                    self.setDeviceState(DeviceState.ERROR)
+                    logger.error(
+                        f"device: {self.m_MQTT_NETID} error: Disconnected -> Try Reconnect"
+                    )
+                    logger.info(
+                        f"device: {self.m_MQTT_NETID} error: Disconnected -> Try Reconnect"
+            )

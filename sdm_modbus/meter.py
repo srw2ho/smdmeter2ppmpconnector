@@ -264,6 +264,8 @@ class Meter:
                 return vtype(data.decode_32bit_uint())
             elif dtype == registerDataType.INT16:
                 return vtype(data.decode_16bit_int())
+            elif dtype == registerDataType.UINT16:
+                return vtype(data.decode_16bit_uint())
             else:
                 raise NotImplementedError(dtype)
         except NotImplementedError:
