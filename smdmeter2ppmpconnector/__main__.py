@@ -173,7 +173,7 @@ def main():
     loop = asyncio.get_event_loop()
     loop.run_until_complete(start_smdmeters())
 
-    # loop.run_until_complete(runDaikin())
+    loop.run_until_complete(runDaikin())
 
     
     loop.close()
