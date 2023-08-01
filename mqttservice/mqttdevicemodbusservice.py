@@ -681,7 +681,18 @@ class MqttDeviceModbusService(MqttDeviceServiceBase):
             jsonpayloadInput = self.m_SMD_Device.read_all(
                 sdm_modbus.registerType.INPUT, scaling=True
             )
-                       
+                     
+            jsonpayloadHold = self.m_SMD_Device.read_all(
+                sdm_modbus.registerType.HOLDING, scaling=True
+            )
+            
+            if len(jsonpayloadHold.keys()) > 0:
+                jsonpayloadInput.update(jsonpayloadHold)             
+                for k in jsonpayloadHold.keys():
+                    # Read Holding-Register nicht ausführen : Batch = 0
+                    self.m_SMD_Device.setBatchForRegisterByKey(k, 0)
+            
+                                          
             self.LogInfo(jsonpayloadInput)
 
             if self._mqtt_client and self._mqtt_client.isConnected():
@@ -696,20 +707,20 @@ class MqttDeviceModbusService(MqttDeviceServiceBase):
                     )
                     self.doPublishPayload(jsonpayloadInput)
 
-            jsonpayloadHold = self.m_SMD_Device.read_all(
-                sdm_modbus.registerType.HOLDING, scaling=True
-            )
-            if len(jsonpayloadHold.keys()) > 0:
-                self.LogInfo(jsonpayloadHold)
-                # logger.info(f"device: {self.m_MQTT_NETID} Read Holding Registers:")
-                if self._mqtt_client and self._mqtt_client.isConnected():
-                    #    Holding-Register nur einmal bei Änderungen lesen
-                    for k in jsonpayloadHold.keys():
-                        # Read Holding-Register nicht ausführen : Batch = 0
-                        self.m_SMD_Device.setBatchForRegisterByKey(k, 0)
+            # jsonpayloadHold = self.m_SMD_Device.read_all(
+            #     sdm_modbus.registerType.HOLDING, scaling=True
+            # )
+            # if len(jsonpayloadHold.keys()) > 0:
+            #     self.LogInfo(jsonpayloadHold)
+            #     # logger.info(f"device: {self.m_MQTT_NETID} Read Holding Registers:")
+            #     if self._mqtt_client and self._mqtt_client.isConnected():
+            #         #    Holding-Register nur einmal bei Änderungen lesen
+            #         for k in jsonpayloadHold.keys():
+            #             # Read Holding-Register nicht ausführen : Batch = 0
+            #             self.m_SMD_Device.setBatchForRegisterByKey(k, 0)
 
-                    self.m_MQTTPayload.update(jsonpayloadHold)
-                    self.doPublishPayload(jsonpayloadHold)
+            #         self.m_MQTTPayload.update(jsonpayloadHold)
+            #         self.doPublishPayload(jsonpayloadHold)
 
             self.m_MQTTPayload.update(jsonpayloadInput)
         finally:
