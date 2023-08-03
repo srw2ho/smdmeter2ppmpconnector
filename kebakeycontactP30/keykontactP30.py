@@ -32,7 +32,7 @@ class KeContactP30(Keba):
             "Current_L2": (1010, 2, meter.registerType.HOLDING, meter.registerDataType.UINT32, float, "Current L2", "A", 5, 0.001),
             "Current_L3": (1012, 2, meter.registerType.HOLDING, meter.registerDataType.UINT32, float, "Current L3", "A", 6, 0.001),
             "Serial_Number": (1014, 2, meter.registerType.HOLDING, meter.registerDataType.UINT32, int, "Serial Number", "", 7, 1),
-            "Product_Type": (1016, 2, meter.registerType.HOLDING, meter.registerDataType.UINT32, int, "Product Type", "", 1, 8),
+            "Product_Type": (1016, 2, meter.registerType.HOLDING, meter.registerDataType.UINT32, int, "Product Type", "", 8, 1),
             "Firmware_Version": (1018, 2, meter.registerType.HOLDING, meter.registerDataType.UINT32, int, "Firmware Version", "", 9, 1),
             "Active_Power": (1020, 2, meter.registerType.HOLDING, meter.registerDataType.UINT32, float, "Active Power", "W", 10, 0.001),
 
@@ -47,7 +47,7 @@ class KeContactP30(Keba):
             "Charged_Energy": (1502, 2, meter.registerType.HOLDING, meter.registerDataType.UINT32, float, "Charged Energy", "Wh", 19, 1),
 
             "Phase_Switching_Source": (1552, 2, meter.registerType.HOLDING, meter.registerDataType.UINT32, int, "Phase Switching Source", "", 20, 1),
-            "Phase_Switching_State": (1552, 2, meter.registerType.HOLDING, meter.registerDataType.UINT32, int, "Phase Switching State", "", 22, 1),
+            "Phase_Switching_State": (1552, 2, meter.registerType.HOLDING, meter.registerDataType.UINT32, int, "Phase Switching State", "", 21, 1),
             "Failsafe_Current_Setting": (1600, 2, meter.registerType.HOLDING, meter.registerDataType.UINT32, float, "Failsafe Current Setting", "A", 22, 0.001),
             "Failsafe_Timeout_Setting": (1602, 2, meter.registerType.HOLDING, meter.registerDataType.UINT32, int, "Failsafe_Timeout_Setting", "sec", 23, 1),
             
