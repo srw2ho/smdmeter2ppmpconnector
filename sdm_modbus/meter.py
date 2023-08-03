@@ -183,7 +183,7 @@ class Meter:
             if not self.connected():
                 self.connect()
                 time.sleep(0.1)
-                logger.error(f"_read_input_registers Error: not connected: device:{self.unit}")
+                logger.error(f"_read_input_registers for device:{self.unit} address:{address} length:{length} Error: not connected")
                 continue
 
             result = self.client.read_input_registers(
@@ -206,7 +206,7 @@ class Meter:
             if not self.connected():
                 self.connect()
                 time.sleep(0.1)
-                logger.error(f"_read_holding_registers Error: not connected: device:{self.unit}")
+                logger.error(f"_read_holding_registers for device:{self.unit} address:{address} length:{length} Error: not connected")
                 continue
 
             result = self.client.read_holding_registers(

@@ -24,19 +24,9 @@ class SPH_TL3_BH_UP(Growatt):
 
         super().__init__(*args, **kwargs)
 
-        # self.wordorder = Endian.Little
-        # self.byteorder = Endian.Little
+
         self.registers = {
-            # "Pactouser_R": (1015, 4, meter.registerType.INPUT, meter.registerDataType.UINT32, float, "AC power to user R", "W", 1, 0.1),
-            # "Pactouser_S": (1017, 4, meter.registerType.INPUT, meter.registerDataType.UINT32, float, "AC power to user S", "W", 1, 0.1),
-            # "Pactouser_T": (1019, 4, meter.registerType.INPUT, meter.registerDataType.UINT32, float, "AC power to user T", "W", 1, 0.1),
-            # "Pactouser_total": (1021, 4, meter.registerType.INPUT, meter.registerDataType.UINT32, float, "AC power to user total", "W", 1, 0.1),
-            
-            # "Pac_to_grid_R": (1023, 4, meter.registerType.INPUT, meter.registerDataType.UINT32, float, "AC power to grid R", "W", 2, 0.1),
-            # "Pac_to_grid_S": (1025, 4, meter.registerType.INPUT, meter.registerDataType.UINT32, float, "AC power to grid S", "W", 2, 0.1),
-            # "Pac_to_grid_T": (1027, 4, meter.registerType.INPUT, meter.registerDataType.UINT32, float, "AC power to grid T", "W", 2, 0.1),
-            # "Pac_to_grid_total": (1029, 4, meter.registerType.INPUT, meter.registerDataType.UINT32, float, "AC power to grid total", "W", 2, 0.1),
-        
+
             "Inverter_Status": (0, 2, meter.registerType.INPUT, meter.registerDataType.UINT16, int, "Inverter_Status", "0,1,3", 1, 1),
             "Ppv": (1, 4, meter.registerType.INPUT, meter.registerDataType.UINT32, float, "Input_power", "W", 1, 0.1),
             "Vpv1": (3, 2, meter.registerType.INPUT, meter.registerDataType.UINT16, float, "PV1 voltage", "V", 1, 0.1),
@@ -87,10 +77,10 @@ class SPH_TL3_BH_UP(Growatt):
             "Pactouser_S": (1017, 4, meter.registerType.INPUT, meter.registerDataType.UINT32, float, "AC power to user S", "W", 4, 0.1),
             "Pactouser_T": (1019, 4, meter.registerType.INPUT, meter.registerDataType.UINT32, float, "AC power to user T", "W", 4, 0.1),
             "Pactouser_total": (1021, 4, meter.registerType.INPUT, meter.registerDataType.UINT32, float, "AC power to user total", "W", 4, 0.1),
-            "Pac_to_grid_R": (1023, 4, meter.registerType.INPUT, meter.registerDataType.UINT32, float, "AC power to grid R", "W", 4, 0.1),
-            "Pac_to_grid_S": (1025, 4, meter.registerType.INPUT, meter.registerDataType.UINT32, float, "AC power to grid S", "W", 4, 0.1),
-            "Pac_to_grid_T": (1027, 4, meter.registerType.INPUT, meter.registerDataType.UINT32, float, "AC power to grid T", "W", 4, 0.1),
-            "Pac_to_grid_total": (1029, 4, meter.registerType.INPUT, meter.registerDataType.UINT32, float, "AC power to grid total", "W", 4, 0.1),
+            "Pactogrid_R": (1023, 4, meter.registerType.INPUT, meter.registerDataType.UINT32, float, "AC power to grid R", "W", 4, 0.1),
+            "Pactogrid_S": (1025, 4, meter.registerType.INPUT, meter.registerDataType.UINT32, float, "AC power to grid S", "W", 4, 0.1),
+            "Pactogrid_T": (1027, 4, meter.registerType.INPUT, meter.registerDataType.UINT32, float, "AC power to grid T", "W", 4, 0.1),
+            "Pactogridtotal": (1029, 4, meter.registerType.INPUT, meter.registerDataType.UINT32, float, "AC power to grid total", "W", 4, 0.1),
             "PLocalLoad_R": (1031, 4, meter.registerType.INPUT, meter.registerDataType.UINT32, float, "INV power to local load R", "W", 4, 0.1),
             "PLocalLoad_S": (1033, 4, meter.registerType.INPUT, meter.registerDataType.UINT32, float, "INV power to local load S", "W", 4, 0.1),
             "PLocalLoad_T": (1035, 4, meter.registerType.INPUT, meter.registerDataType.UINT32, float, "INV power to local load T", "W", 4, 0.1),
