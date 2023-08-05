@@ -82,7 +82,7 @@ class SPH_TL3_BH_UP(Growatt):
             "Pactogrid_R": (1023, 2, meter.registerType.INPUT, meter.registerDataType.UINT32, float, "AC power to grid R", "W", 2, 0.1),
             "Pactogrid_S": (1025, 2, meter.registerType.INPUT, meter.registerDataType.UINT32, float, "AC power to grid S", "W", 2, 0.1),
             "Pactogrid_T": (1027, 2, meter.registerType.INPUT, meter.registerDataType.UINT32, float, "AC power to grid T", "W", 2, 0.1),
-            "Pactogridtotal": (1029, 2, meter.registerType.INPUT, meter.registerDataType.UINT32, float, "AC power to grid total", "W", 2, 0.1),
+            "Pactogrid_total": (1029, 2, meter.registerType.INPUT, meter.registerDataType.UINT32, float, "AC power to grid total", "W", 2, 0.1),
             "PLocalLoad_R": (1031, 2, meter.registerType.INPUT, meter.registerDataType.UINT32, float, "INV power to local load R", "W", 2, 0.1),
             "PLocalLoad_S": (1033, 2, meter.registerType.INPUT, meter.registerDataType.UINT32, float, "INV power to local load S", "W", 2, 0.1),
             "PLocalLoad_T": (1035, 2, meter.registerType.INPUT, meter.registerDataType.UINT32, float, "INV power to local load T", "W", 2, 0.1),
