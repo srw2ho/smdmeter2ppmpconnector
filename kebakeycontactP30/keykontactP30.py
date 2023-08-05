@@ -52,20 +52,20 @@ class KeContactP30(Keba):
             "Failsafe_Timeout_Setting": (1602, 2, meter.registerType.HOLDING, meter.registerDataType.UINT32, int, "Failsafe_Timeout_Setting", "sec", 23, 1),
             
             # Write Single Holding-Register
-            "Set_Charging_Current": (5004, 2, meter.registerType.SINGLE_HOLDING, meter.registerDataType.UINT32, float, "Set Charging Current", "A", 1, 0.001),
-            "Set_Energy": (5010, 2, meter.registerType.SINGLE_HOLDING, meter.registerDataType.UINT32, float, "Set Energy", "kWh", 2, 0.001),
+            "Set_Charging_Current": (5004, 1, meter.registerType.SINGLE_HOLDING, meter.registerDataType.UINT16, float, "Set Charging Current", "A", 1, 0.001),
+            "Set_Energy": (5010, 1, meter.registerType.SINGLE_HOLDING, meter.registerDataType.UINT16, float, "Set Energy", "kWh", 2, 0.001),
 
-            "Unlock_Plug": (5012, 2, meter.registerType.SINGLE_HOLDING, meter.registerDataType.UINT32, int, "Unlock Plug", "", 3, 1),
+            "Unlock_Plug": (5012, 1, meter.registerType.SINGLE_HOLDING, meter.registerDataType.UINT16, int, "Unlock Plug", "", 3, 1),
 
-            "Charging_Station_Enable": (5014, 2, meter.registerType.SINGLE_HOLDING, meter.registerDataType.UINT32, int, "Charging Station Enable", "", 4, 1),
+            "Charging_Station_Enable": (5014, 1, meter.registerType.SINGLE_HOLDING, meter.registerDataType.UINT16, int, "Charging Station Enable", "", 4, 1),
 
-            "Set_Phase_Switch_Toggle": (5050, 2, meter.registerType.SINGLE_HOLDING, meter.registerDataType.UINT32, int, "Set Phase Switch Toggle", "0,1,2,3,4", 5, 1),
+            "Set_Phase_Switch_Toggle": (5050, 1, meter.registerType.SINGLE_HOLDING, meter.registerDataType.UINT16, int, "Set Phase Switch Toggle", "0,1,2,3,4", 5, 1),
 
-            "Trigger_Phase_Switch": (5052, 2, meter.registerType.SINGLE_HOLDING, meter.registerDataType.UINT32, int, "Trigger_Phase_Switch", "0,1", 6, 1),
+            "Trigger_Phase_Switch": (5052, 1, meter.registerType.SINGLE_HOLDING, meter.registerDataType.UINT16, int, "Trigger_Phase_Switch", "0,1", 6, 1),
 
-            "Failsafe_Current": (5016, 2, meter.registerType.SINGLE_HOLDING, meter.registerDataType.UINT32, float, "Failsafe Current", "A", 7, 0.001),
-            "Failsafe_Timeout": (5018, 2, meter.registerType.SINGLE_HOLDING, meter.registerDataType.UINT32, int, "Failsafe_Timeout", "sec", 8, 1),
-            "Failsafe_Persist": (5020, 2, meter.registerType.SINGLE_HOLDING, meter.registerDataType.UINT16, int, "Failsafe_Persist", "", 9, 1),
+            "Failsafe_Current": (5016, 1, meter.registerType.SINGLE_HOLDING, meter.registerDataType.UINT16, float, "Failsafe Current", "A", 7, 0.001),
+            "Failsafe_Timeout": (5018, 1, meter.registerType.SINGLE_HOLDING, meter.registerDataType.UINT16, int, "Failsafe_Timeout", "sec", 8, 1),
+            "Failsafe_Persist": (5020, 1, meter.registerType.SINGLE_HOLDING, meter.registerDataType.UINT16, int, "Failsafe_Persist", "", 9, 1),
 
          
 
