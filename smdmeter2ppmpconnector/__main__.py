@@ -84,7 +84,7 @@ MQTT_TLS_CERT = toml.get('mqtt.tls_cert', '')
 
 
 
-def run_SMD_meter(alias, modbushost, modbusport, devid, metertype, timeout, refresrate):
+def run_SMD_meter(alias, modbushost, modbusport, devid, metertype, timeout, refresrate,modbusbatchsleepinsec):
     
     mqttDeviceService = MqttDeviceModbusService(
         MQTT_HOST=MQTT_HOST,
@@ -95,6 +95,8 @@ def run_SMD_meter(alias, modbushost, modbusport, devid, metertype, timeout, refr
         INFODEBUGLEVEL=1,
         MQTT_REFRESH_TIME=refresrate,
         MQTT_NETID=alias,
+        MQTT_CONNECT_TIME=timeout,
+        MODBUS_BATCH_SLEEP=modbusbatchsleepinsec
     )
     
     mqttDeviceService.createtMeterByType(metertype=metertype,modbushost=modbushost,modbusport=modbusport,timeout=timeout,devid=devid)
@@ -127,14 +129,17 @@ async def start_smdmeters():
     SDMMETETERS_REFRESHRATE = toml.get('sdmmeters.refreshrate', [2])
     SDMMETETERS_CONNECTIONTIMEOUT = toml.get(
         'sdmmeters.connectiontimeout', [2])
+    MODBUS_BATCH_SLEEPINSCS = toml.get(
+        'sdmmeters.modbusbatchsleepinsec', [0])
     SDMMETERS_DEVICEID = toml.get('sdmmeters.deviceid', [2])
 
 
+
     # create own thread for each SMD-device
-    for alias, host, port, devid, metertypes, timeout, refresrate  in zip(SMDMETERS_MODBUSALIAS, SMDMETERS_MODBUSHOST, SDMMETERS_MODBUSPORT, SDMMETERS_DEVICEID, SMDMETERS_TYPE, SDMMETETERS_CONNECTIONTIMEOUT, SDMMETETERS_REFRESHRATE):
+    for alias, host, port, devid, metertypes, timeout, refresrate,modbusbatchsleepinsec  in zip(SMDMETERS_MODBUSALIAS, SMDMETERS_MODBUSHOST, SDMMETERS_MODBUSPORT, SDMMETERS_DEVICEID, SMDMETERS_TYPE, SDMMETETERS_CONNECTIONTIMEOUT, SDMMETETERS_REFRESHRATE,MODBUS_BATCH_SLEEPINSCS):
         # create new thread for each OPC-UA client
         thread = Thread(target=run_SMD_meter, args=(alias,
-                                                    host, port, devid, metertypes, timeout, refresrate))
+                                                    host, port, devid, metertypes, timeout, refresrate,modbusbatchsleepinsec))
 
         thread.start()
 
@@ -146,6 +151,7 @@ async def runDaikin():
     DAIKINUSER = toml.get('daikin.user', '')
     DAIKINPW = toml.get('daikin.password', '')
     DAIKINREFRESHRATE= toml.get('daikin.refreshrate', 5)
+    DAIKINCONNCTIONTIMEOUT= toml.get('daikin.connectiontimeout', 5)
     RefreshTime: float = 0.2
         
     mqttDeviceService = MqttDeviceDaikinService(
@@ -156,6 +162,7 @@ async def runDaikin():
         MQTT_TLS_CERT=MQTT_TLS_CERT,
         INFODEBUGLEVEL=1,
         MQTT_REFRESH_TIME=DAIKINREFRESHRATE,
+        MQTT_CONNECT_TIME=DAIKINCONNCTIONTIMEOUT,
         MQTT_NETID="DaikinWP",
         DAIKINUSER=DAIKINUSER,
         DAIKINPW=DAIKINPW

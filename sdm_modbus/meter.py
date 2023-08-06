@@ -14,6 +14,7 @@ from pymodbus.register_read_message import ReadHoldingRegistersResponse
 
 logger = logging.getLogger("root")
 
+
 class connectionType(enum.Enum):
     RTU = 1
     TCP = 2
@@ -183,7 +184,9 @@ class Meter:
             if not self.connected():
                 self.connect()
                 time.sleep(0.1)
-                logger.error(f"_read_input_registers for device:{self.unit} address:{address} length:{length} Error: not connected")
+                logger.error(
+                    f"_read_input_registers for device:{self.unit} address:{address} length:{length} Error: not connected"
+                )
                 continue
 
             result = self.client.read_input_registers(
@@ -206,7 +209,9 @@ class Meter:
             if not self.connected():
                 self.connect()
                 time.sleep(0.1)
-                logger.error(f"_read_holding_registers for device:{self.unit} address:{address} length:{length} Error: not connected")
+                logger.error(
+                    f"_read_holding_registers for device:{self.unit} address:{address} length:{length} Error: not connected"
+                )
                 continue
 
             result = self.client.read_holding_registers(
@@ -383,7 +388,7 @@ class Meter:
 
         return self._write(self.registers[key], data / self.get_scaling(key))
 
-    def read_all(self, rtype=registerType.INPUT, scaling=False):
+    def read_all(self, rtype=registerType.INPUT, scaling=False, batchsleepinSecs=0):
         registers = {k: v for k, v in self.registers.items() if (v[2] == rtype)}
         results = {}
 
@@ -392,6 +397,9 @@ class Meter:
 
             if not register_batch:
                 break
+
+            if (batch != 1) and (batchsleepinSecs != 0):
+                time.sleep(batchsleepinSecs)
 
             results.update(self._read_all(register_batch, rtype))
 

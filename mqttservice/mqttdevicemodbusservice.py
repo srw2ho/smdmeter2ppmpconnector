@@ -51,6 +51,8 @@ class MqttDeviceModbusService(MqttDeviceServiceBase):
         INFODEBUGLEVEL=1,
         MQTT_REFRESH_TIME=1.0,
         MQTT_NETID="PLC1",
+        MQTT_CONNECT_TIME=5,
+        MODBUS_BATCH_SLEEP=0,
     ):
         super().__init__(
             MQTT_HOST=MQTT_HOST,
@@ -61,8 +63,10 @@ class MqttDeviceModbusService(MqttDeviceServiceBase):
             INFODEBUGLEVEL=INFODEBUGLEVEL,
             MQTT_REFRESH_TIME=MQTT_REFRESH_TIME,
             MQTT_NETID=MQTT_NETID,
+            MQTT_CONNECT_TIME=MQTT_CONNECT_TIME
         )
         self.m_SMD_Device = None
+        self.m_MODBUS_BATCH_SLEEP = MODBUS_BATCH_SLEEP
         # self.m_MQTT_NETID = MQTT_NETID
 
         # self.m_INFODEBUGLEVEL = INFODEBUGLEVEL
@@ -318,7 +322,8 @@ class MqttDeviceModbusService(MqttDeviceServiceBase):
                             doUpdate = False
                         else:
                             # Holding-Register beim nächsten Lesen auslesen
-                            self.m_SMD_Device.setBatchForRegisterByKey(identifier, 1)
+                            self.m_SMD_Device.setBatchForRegisterByKey(
+                                identifier, 1)
                             doUpdate = True
                         if not doUpdate:
                             if self.m_INFODEBUGLEVEL > 0:
@@ -391,7 +396,8 @@ class MqttDeviceModbusService(MqttDeviceServiceBase):
         logger.info(f"MQTT-Client: on_connect -> publish_MQTTMetaData()")
 
         # delete previous Topic
-        self._mqtt_client.publish(self.getDeviceServicesTopic(), None, retain=True)
+        self._mqtt_client.publish(
+            self.getDeviceServicesTopic(), None, retain=True)
         # self._mqtt_client.publish(self.m_device.info_topic(), None, retain=True)
 
         self.restoreBatchfordallHoldingRegisters()
@@ -401,7 +407,7 @@ class MqttDeviceModbusService(MqttDeviceServiceBase):
 
         self.publish_MQTTMetaData()
         self.subscribeMQTTWriteTopis()
-                
+
         logger.info(f"MQTT-Client: on_connect -> publish_cached_values()")
 
         # self.publish_cached_values()
@@ -501,12 +507,9 @@ class MqttDeviceModbusService(MqttDeviceServiceBase):
 
             self.m_MetaData = jsondatapayload
 
-               
             values = json.dumps(jsondatapayload)
 
             self._mqtt_client.publish(topic, values, retain=True)
-
-
 
             self.writeMetaDataToFile()
 
@@ -523,8 +526,6 @@ class MqttDeviceModbusService(MqttDeviceServiceBase):
     # def on_disconnect(self, client, userdata, rc):
     #     self.m_onMqttConnected = False
     #     logger.info(f"MQTT-Client: on_disconnect")
-
-
 
     def doSMDDeviceconnect(self):
         IsConnected: bool = self.m_SMD_Device.connected()
@@ -632,10 +633,14 @@ class MqttDeviceModbusService(MqttDeviceServiceBase):
             self.m_lock.acquire()
 
             jsonpayloadInput = self.m_SMD_Device.read_all(
-                sdm_modbus.registerType.INPUT, scaling=True
+                sdm_modbus.registerType.INPUT,
+                scaling=True,
+                batchsleepinSecs=self.m_MODBUS_BATCH_SLEEP,
             )
             jsonpayloadHolding = self.m_SMD_Device.read_all(
-                sdm_modbus.registerType.HOLDING, scaling=True
+                sdm_modbus.registerType.HOLDING,
+                scaling=True,
+                batchsleepinSecs=self.m_MODBUS_BATCH_SLEEP,
             )
 
             # Holding-Register nur einmal lesen und dann nicht mit batch=0 ausblenden
@@ -679,20 +684,23 @@ class MqttDeviceModbusService(MqttDeviceServiceBase):
         try:
             self.m_lock.acquire()
             jsonpayloadInput = self.m_SMD_Device.read_all(
-                sdm_modbus.registerType.INPUT, scaling=True
+                sdm_modbus.registerType.INPUT,
+                scaling=True,
+                batchsleepinSecs=self.m_MODBUS_BATCH_SLEEP,
             )
-                     
+
             jsonpayloadHold = self.m_SMD_Device.read_all(
-                sdm_modbus.registerType.HOLDING, scaling=True
+                sdm_modbus.registerType.HOLDING,
+                scaling=True,
+                batchsleepinSecs=self.m_MODBUS_BATCH_SLEEP,
             )
-            
+
             if len(jsonpayloadHold.keys()) > 0:
-                jsonpayloadInput.update(jsonpayloadHold)             
+                jsonpayloadInput.update(jsonpayloadHold)
                 for k in jsonpayloadHold.keys():
                     # Read Holding-Register nicht ausführen : Batch = 0
                     self.m_SMD_Device.setBatchForRegisterByKey(k, 0)
-            
-                                          
+
             self.LogInfo(jsonpayloadInput)
 
             if self._mqtt_client and self._mqtt_client.isConnected():
@@ -728,8 +736,6 @@ class MqttDeviceModbusService(MqttDeviceServiceBase):
             return self.m_MQTTPayload
 
     def doProcess(self):
-
-        
         IsConnected: bool = self.m_SMD_Device.connected()
         # if not IsConnected:
         #     self.doSMDDeviceconnect()
@@ -746,7 +752,8 @@ class MqttDeviceModbusService(MqttDeviceServiceBase):
         if IsConnected:
             difference_act = self.m_TimeSpan.getTimeSpantoActTime()
 
-            hours_actsecs = self.m_TimeSpan.getTimediffernceintoSecs(difference_act)
+            hours_actsecs = self.m_TimeSpan.getTimediffernceintoSecs(
+                difference_act)
             if hours_actsecs >= self.m_MQTT_REFRESH_TIME:
                 if IsConnected:
                     self.readInputRegisters()
@@ -754,11 +761,13 @@ class MqttDeviceModbusService(MqttDeviceServiceBase):
                     self.m_TimeSpan.setActTime(timestamp)
 
                 else:
-                    self.doSMDDeviceconnect()
-                    self.setDeviceState(DeviceState.ERROR)
-                    logger.error(
-                        f"device: {self.m_MQTT_NETID} error: Disconnected -> Try Reconnect"
-                    )
-                    logger.info(
-                        f"device: {self.m_MQTT_NETID} error: Disconnected -> Try Reconnect"
-            )
+                    if hours_actsecs >= self.m_MQTT_CONNECT_TIME:
+                        self.doSMDDeviceconnect()
+                        self.setDeviceState(DeviceState.ERROR)
+                        logger.error(
+                            f"device: {self.m_MQTT_NETID} error: Disconnected -> Try Reconnect"
+                        )
+                        logger.info(
+                            f"device: {self.m_MQTT_NETID} error: Disconnected -> Try Reconnect"
+                        )
+                        self.m_TimeSpan.setActTime(timestamp)

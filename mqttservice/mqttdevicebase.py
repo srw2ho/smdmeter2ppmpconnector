@@ -47,12 +47,13 @@ class MqttDeviceServiceBase(object):
         INFODEBUGLEVEL=1,
         MQTT_REFRESH_TIME=1.0,
         MQTT_NETID="PLC1",
+        MQTT_CONNECT_TIME=5
     ):
         self.m_MQTT_NETID = MQTT_NETID
 
         self.m_INFODEBUGLEVEL = INFODEBUGLEVEL
         self.m_MQTT_REFRESH_TIME = MQTT_REFRESH_TIME
-
+        self.m_MQTT_CONNECT_TIME = MQTT_CONNECT_TIME
         self.m_last_MQTT_timestamp = 0
         self.m_MQTT_QUEUE = Queue(maxsize=0)
         self.m_MQTT_QUEUE_CHANGEDVALUES = Queue(maxsize=0)

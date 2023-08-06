@@ -46,6 +46,7 @@ class MqttDeviceDaikinService(MqttDeviceServiceBase):
         INFODEBUGLEVEL=1,
         MQTT_REFRESH_TIME=1.0,
         MQTT_NETID="PLC1",
+        MQTT_CONNECT_TIME=5,
         DAIKINUSER="",
         DAIKINPW="",
     ):
@@ -58,6 +59,7 @@ class MqttDeviceDaikinService(MqttDeviceServiceBase):
             INFODEBUGLEVEL=INFODEBUGLEVEL,
             MQTT_REFRESH_TIME=MQTT_REFRESH_TIME,
             MQTT_NETID=MQTT_NETID,
+            MQTT_CONNECT_TIME=MQTT_CONNECT_TIME
         )
         self.m_daikinAPI = DaikinApi()
         self.m_daikinUser = DAIKINUSER
@@ -669,14 +671,16 @@ class MqttDeviceDaikinService(MqttDeviceServiceBase):
                     timestamp = datetime.now(timezone.utc).astimezone()
                     self.m_TimeSpan.setActTime(timestamp)
                 else:
-                    await self.connectDevice()
-                    self.setDeviceState(DeviceState.ERROR)
-                    logger.error(
-                        f"device: {self.m_MQTT_NETID} error: Disconnected -> Try Reconnect"
-                    )
-                    logger.info(
-                        f"device: {self.m_MQTT_NETID} error: Disconnected -> Try Reconnect"
-                    )
+                    if hours_actsecs >= self.m_MQTT_CONNECT_TIME:
+                        await self.connectDevice()
+                        self.setDeviceState(DeviceState.ERROR)
+                        logger.error(
+                            f"device: {self.m_MQTT_NETID} error: Disconnected -> Try Reconnect"
+                        )
+                        logger.info(
+                            f"device: {self.m_MQTT_NETID} error: Disconnected -> Try Reconnect"
+                        )
+                        self.m_TimeSpan.setActTime(timestamp)
 
 
     def doStartProcessCommandThred(self):
