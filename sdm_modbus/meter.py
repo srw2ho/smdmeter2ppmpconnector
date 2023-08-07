@@ -94,6 +94,8 @@ class Meter:
             self.timeout = kwargs.get("timeout", TIMEOUT)
             self.retries = kwargs.get("retries", RETRIES)
             self.unit = kwargs.get("unit", UNIT)
+            self.retry_on_empty =kwargs.get("retry_on_empty", False)
+     
 
             client_args = {}
 
@@ -145,6 +147,8 @@ class Meter:
                     parity=self.parity,
                     baudrate=self.baud,
                     timeout=self.timeout,
+                    retries=self.retries,
+                    retry_on_empty=self.retry_on_empty,
                     **client_args,
                 )
             elif udp:
@@ -154,7 +158,12 @@ class Meter:
                 self.mode = connectionType.UDP
 
                 self.client = ModbusUdpClient(
-                    host=self.host, port=self.port, timeout=self.timeout, **client_args
+                    host=self.host,
+                    port=self.port,
+                    timeout=self.timeout,
+                    retries=self.retries,
+                    retry_on_empty=self.retry_on_empty,
+                    **client_args,
                 )
             else:
                 self.host = kwargs.get("host")
@@ -163,7 +172,12 @@ class Meter:
                 self.mode = connectionType.TCP
 
                 self.client = ModbusTcpClient(
-                    host=self.host, port=self.port, timeout=self.timeout, **client_args
+                    host=self.host,
+                    port=self.port,
+                    timeout=self.timeout,
+                    retries=self.retries,
+                    retry_on_empty=self.retry_on_empty,
+                    **client_args,
                 )
 
         self.connect()

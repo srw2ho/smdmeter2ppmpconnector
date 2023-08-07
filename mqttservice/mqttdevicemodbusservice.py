@@ -151,6 +151,8 @@ class MqttDeviceModbusService(MqttDeviceServiceBase):
                 host=modbushost,
                 port=modbusport,
                 timeout=timeout,
+                retry_on_empty=True,
+                retries=3,
                 framer=None,
                 unit=devid,
                 udp=False,
@@ -160,6 +162,8 @@ class MqttDeviceModbusService(MqttDeviceServiceBase):
                 host=modbushost,
                 port=modbusport,
                 timeout=timeout,
+                retry_on_empty=True,
+                retries=3,
                 framer=None,
                 unit=devid,
                 udp=False,
@@ -170,6 +174,8 @@ class MqttDeviceModbusService(MqttDeviceServiceBase):
                 host=modbushost,
                 port=modbusport,
                 timeout=timeout,
+                retry_on_empty=True,
+                retries=3,
                 framer=None,
                 unit=devid,
                 udp=False,
@@ -179,6 +185,8 @@ class MqttDeviceModbusService(MqttDeviceServiceBase):
                 host=modbushost,
                 port=modbusport,
                 timeout=timeout,
+                retry_on_empty=True,
+                retries=3,
                 framer=None,
                 unit=devid,
                 udp=False,
@@ -188,6 +196,8 @@ class MqttDeviceModbusService(MqttDeviceServiceBase):
                 host=modbushost,
                 port=modbusport,
                 timeout=timeout,
+                retry_on_empty=True,
+                retries=3,
                 framer=None,
                 unit=devid,
                 udp=False,
@@ -197,6 +207,8 @@ class MqttDeviceModbusService(MqttDeviceServiceBase):
                 host=modbushost,
                 port=modbusport,
                 timeout=timeout,
+                retry_on_empty=True,
+                retries=3,
                 framer=None,
                 unit=devid,
                 udp=False,
@@ -206,6 +218,8 @@ class MqttDeviceModbusService(MqttDeviceServiceBase):
                 host=modbushost,
                 port=modbusport,
                 timeout=timeout,
+                retry_on_empty=True,
+                retries=3,
                 framer=None,
                 unit=devid,
                 udp=False,
@@ -215,6 +229,8 @@ class MqttDeviceModbusService(MqttDeviceServiceBase):
                 host=modbushost,
                 port=modbusport,
                 timeout=timeout,
+                retry_on_empty=True,
+                retries=3,
                 framer=None,
                 unit=devid,
                 udp=False,
@@ -224,6 +240,8 @@ class MqttDeviceModbusService(MqttDeviceServiceBase):
                 host=modbushost,
                 port=modbusport,
                 timeout=timeout,
+                retry_on_empty=True,
+                retries=3,
                 framer=None,
                 unit=devid,
                 udp=False,
@@ -739,7 +757,7 @@ class MqttDeviceModbusService(MqttDeviceServiceBase):
         timestamp = datetime.now(timezone.utc).astimezone()
         difference_act = self.m_TimeSpan.getTimeSpantoActTime()
         hours_actsecs = self.m_TimeSpan.getTimediffernceintoSecs(difference_act)
-        
+
         if IsConnected:
             if hours_actsecs >= self.m_MQTT_REFRESH_TIME:
                 self.m_TimeSpan.setActTime(timestamp)
