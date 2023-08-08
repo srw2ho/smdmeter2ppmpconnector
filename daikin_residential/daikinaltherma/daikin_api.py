@@ -41,6 +41,7 @@ class DaikinApi:
         self.tokenSet = None
         self._daikinpassword = ""
         self._daikinuser = ""
+        self._communicationError = False
         # tokenFile = "tokenset.json"
         self.tokenSet = None
         # with open(tokenFile) as jsonFile:
@@ -77,6 +78,9 @@ class DaikinApi:
 
     def isTokenretrieved(self):
         return self.tokenSet != None
+    
+    def isCommunicationError(self):
+        return self._communicationError
 
     async def doBearerRequest(self, resourceUrl, options=None, refreshed=False):
         if self.tokenSet is None:
@@ -109,7 +113,8 @@ class DaikinApi:
                     res = requests.get(resourceUrl, headers=headers)
 
             except Exception as e:
-                _LOGGER.error("REQUEST FAILED: %s", e)
+                self._communicationError = True
+                _LOGGER.error("doBearerRequest-REQUEST FAILED: %s", e)
                 return str(e)
             _LOGGER.debug("BEARER RESPONSE CODE: %s", res.status_code)
 
@@ -150,7 +155,7 @@ class DaikinApi:
         try:
             res = requests.post(url, headers=headers, json=ref_json)
         except Exception as e:
-            _LOGGER.error("REQUEST FAILED: %s", e)
+            _LOGGER.error("refreshAccessToken-REQUEST FAILED: %s", e)
         _LOGGER.debug("refreshAccessToken response code: %s", res.status_code)
         _LOGGER.debug("refreshAccessToken response: %s", res.json())
         res_json = res.json()
@@ -272,6 +277,8 @@ class DaikinApi:
         _LOGGER.info("Retrieving new TokenSet...")
         self._daikinpassword = password
         self._daikinuser = userName
+        self._communicationError = False
+        self.tokenSet = None
         # Extract csrf state cookies
         try:
             response = await self._doAuthorizationRequest()

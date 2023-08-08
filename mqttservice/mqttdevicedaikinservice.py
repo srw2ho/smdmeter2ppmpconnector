@@ -133,7 +133,7 @@ class MqttDeviceDaikinService(MqttDeviceServiceBase):
         return self.m_daikinAPI.isTokenretrieved()
 
     def isDeviceConnected(self) -> bool:
-        return self.m_daikinAPI.isTokenretrieved()
+        return self.m_daikinAPI.isTokenretrieved() and not self.m_daikinAPI.isCommunicationError()
 
     async def doWriteMQTTProcessCommand(self, identifier: str, value: any) -> bool:
         doUpdate = False
