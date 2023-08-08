@@ -27,6 +27,8 @@ API_KEY2 = "3_QebFXhxEWDc8JhJdBWmvUd1e0AaWJCISbqe4QIHrk_KzNVJFJ4xsJ2UZbl8OIIFY"
 
 MIN_TIME_BETWEEN_UPDATES = datetime.timedelta(seconds=2)
 
+COMMUNICATIONERRORCOUNTER_MAX = 3
+
 
 class DaikinApi:
     """Daikin Residential API."""
@@ -41,7 +43,7 @@ class DaikinApi:
         self.tokenSet = None
         self._daikinpassword = ""
         self._daikinuser = ""
-        self._communicationError = False
+        self._communicationErrorCounter = 0
         # tokenFile = "tokenset.json"
         self.tokenSet = None
         # with open(tokenFile) as jsonFile:
@@ -78,9 +80,12 @@ class DaikinApi:
 
     def isTokenretrieved(self):
         return self.tokenSet != None
-    
+
     def isCommunicationError(self):
-        return self._communicationError
+        return self._communicationErrorCounter >= COMMUNICATIONERRORCOUNTER_MAX
+
+    def getCommunicationErrorCounter(self):
+        return self._communicationErrorCounter
 
     async def doBearerRequest(self, resourceUrl, options=None, refreshed=False):
         if self.tokenSet is None:
@@ -98,14 +103,16 @@ class DaikinApi:
 
         async with self._cloud_lock:
             try:
-                _LOGGER.debug("BEARER REQUEST URL: %s", resourceUrl)
-                _LOGGER.debug("BEARER REQUEST HEADERS: %s", headers)
+                _LOGGER.debug("doBearerRequest-BEARER REQUEST URL: %s", resourceUrl)
+                _LOGGER.debug("doBearerRequest-BEARER REQUEST HEADERS: %s", headers)
                 if (
                     options is not None
                     and "method" in options
                     and options["method"] == "PATCH"
                 ):
-                    _LOGGER.debug("BEARER REQUEST JSON: %s", options["json"])
+                    _LOGGER.debug(
+                        "doBearerRequest-BEARER REQUEST JSON: %s", options["json"]
+                    )
                     res = requests.patch(
                         resourceUrl, headers=headers, data=options["json"]
                     )
@@ -113,15 +120,17 @@ class DaikinApi:
                     res = requests.get(resourceUrl, headers=headers)
 
             except Exception as e:
-                self._communicationError = True
+                self._communicationErrorCounter = COMMUNICATIONERRORCOUNTER_MAX
                 _LOGGER.error("doBearerRequest-REQUEST FAILED: %s", e)
                 return str(e)
-            _LOGGER.debug("BEARER RESPONSE CODE: %s", res.status_code)
+            _LOGGER.debug("doBearerRequest-BEARER RESPONSE CODE: %s", res.status_code)
 
         if res.status_code == 200:
             try:
                 return res.json()
             except Exception:
+                self._communicationErrorCounter = self._communicationErrorCounter + 1
+                _LOGGER.error("doBearerRequest-BEARER json Exception: %s", res.text)
                 return res.text
         elif res.status_code == 204:
             self._just_updated = True
@@ -132,7 +141,13 @@ class DaikinApi:
             await self.refreshAccessToken()
             return await self.doBearerRequest(resourceUrl, options, True)
 
-        raise Exception("Communication failed! Status: " + str(res.status_code))
+        self._communicationErrorCounter = self._communicationErrorCounter + 1
+        _LOGGER.error(
+            "doBearerRequest-Communication failed! Status: " + str(res.status_code)
+        )
+        raise Exception(
+            "doBearerRequest-Communication failed! Status: " + str(res.status_code)
+        )
 
     def createSensors(self) -> dict:
         return createSensorsByDaikinAPI(self.data)
@@ -277,7 +292,7 @@ class DaikinApi:
         _LOGGER.info("Retrieving new TokenSet...")
         self._daikinpassword = password
         self._daikinuser = userName
-        self._communicationError = False
+        self._communicationErrorCounter = 0
         self.tokenSet = None
         # Extract csrf state cookies
         try:
