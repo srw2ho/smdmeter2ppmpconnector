@@ -133,7 +133,10 @@ class MqttDeviceDaikinService(MqttDeviceServiceBase):
         return self.m_daikinAPI.isTokenretrieved()
 
     def isDeviceConnected(self) -> bool:
-        return self.m_daikinAPI.isTokenretrieved() and not self.m_daikinAPI.isCommunicationError()
+        return (
+            self.m_daikinAPI.isTokenretrieved()
+            and not self.m_daikinAPI.isCommunicationError()
+        )
 
     async def doWriteMQTTProcessCommand(self, identifier: str, value: any) -> bool:
         doUpdate = False
@@ -653,34 +656,45 @@ class MqttDeviceDaikinService(MqttDeviceServiceBase):
 
     async def doProcess(self):
         # timestamp = datetime.now(timezone.utc).astimezone()
+        try:
+            IsConnected: bool = self.isDeviceConnected()
+            timestamp = datetime.now(timezone.utc).astimezone()
+            difference_act = self.m_TimeSpan.getTimeSpantoActTime()
 
-        IsConnected: bool = self.isDeviceConnected()
-        timestamp = datetime.now(timezone.utc).astimezone()
-        difference_act = self.m_TimeSpan.getTimeSpantoActTime()
+            hours_actsecs = self.m_TimeSpan.getTimediffernceintoSecs(difference_act)
 
-        hours_actsecs = self.m_TimeSpan.getTimediffernceintoSecs(difference_act)
+            if not self.m_MQTT_QUEUE.empty():
+                command = self.m_MQTT_QUEUE.get()
+                await self.doMQTTProcessCommand(command)
 
-        if not self.m_MQTT_QUEUE.empty():
-            command = self.m_MQTT_QUEUE.get()
-            await self.doMQTTProcessCommand(command)
+            if IsConnected:
+                if hours_actsecs >= self.m_MQTT_REFRESH_TIME:
+                    self.m_TimeSpan.setActTime(timestamp)
+                    await self.m_daikinAPI.async_update()
+                    self.readInputRegisters()
 
-        if IsConnected:
-            if hours_actsecs >= self.m_MQTT_REFRESH_TIME:
-                self.m_TimeSpan.setActTime(timestamp)
-                await self.m_daikinAPI.async_update()
-                self.readInputRegisters()
-
-        else:
-            if hours_actsecs >= self.m_MQTT_CONNECT_TIME:
-                self.m_TimeSpan.setActTime(timestamp)
-                await self.connectDevice()
-                self.setDeviceState(DeviceState.ERROR)
-                logger.error(
-                    f"device: {self.m_MQTT_NETID} error: Disconnected -> Try Reconnect"
-                )
-                logger.info(
-                    f"device: {self.m_MQTT_NETID} error: Disconnected -> Try Reconnect"
-                )
+            else:
+                if hours_actsecs >= self.m_MQTT_CONNECT_TIME:
+                    self.m_TimeSpan.setActTime(timestamp)
+                    await self.connectDevice()
+                    self.setDeviceState(DeviceState.ERROR)
+                    logger.error(
+                        f"device: {self.m_MQTT_NETID} error: Disconnected -> Try Reconnect"
+                    )
+                    logger.info(
+                        f"device: {self.m_MQTT_NETID} error: Disconnected -> Try Reconnect"
+                    )
+        except Exception as e:
+            errorcnter = self.m_daikinAPI.getCommunicationErrorCounter()
+            logger.error(
+                f"device: {self.m_MQTT_NETID}  doProcess : error:{e} errorcounter: {errorcnter}"
+            )
+            logger.info(
+                f"device: {self.m_MQTT_NETID}  doProcess : error:{e} errorcounter: {errorcnter}"
+            )
+            self.m_daikinAPI.setCommunicationErrorCounter(
+                self.m_daikinAPI.getCommunicationErrorCounter() + 1
+            )
 
     def doStartProcessCommandThred(self):
         pass

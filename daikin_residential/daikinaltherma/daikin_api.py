@@ -78,14 +78,17 @@ class DaikinApi:
 
         _LOGGER.info("Daikin Residential API initialized.")
 
-    def isTokenretrieved(self):
+    def isTokenretrieved(self)->bool:
         return self.tokenSet != None
 
     def isCommunicationError(self):
         return self._communicationErrorCounter >= COMMUNICATIONERRORCOUNTER_MAX
 
-    def getCommunicationErrorCounter(self):
+    def getCommunicationErrorCounter(self) -> int:
         return self._communicationErrorCounter
+
+    def setCommunicationErrorCounter(self, value: int):
+        self._communicationErrorCounter = value
 
     async def doBearerRequest(self, resourceUrl, options=None, refreshed=False):
         if self.tokenSet is None:
