@@ -78,7 +78,7 @@ class DaikinApi:
 
         _LOGGER.info("Daikin Residential API initialized.")
 
-    def isTokenretrieved(self)->bool:
+    def isTokenretrieved(self) -> bool:
         return self.tokenSet != None
 
     def isCommunicationError(self):
@@ -125,7 +125,7 @@ class DaikinApi:
             except Exception as e:
                 self._communicationErrorCounter = COMMUNICATIONERRORCOUNTER_MAX
                 _LOGGER.error("doBearerRequest-REQUEST FAILED: %s", e)
-                return str(e)
+                return {}
             _LOGGER.debug("doBearerRequest-BEARER RESPONSE CODE: %s", res.status_code)
 
         if res.status_code == 200:
@@ -134,10 +134,12 @@ class DaikinApi:
             except Exception:
                 self._communicationErrorCounter = self._communicationErrorCounter + 1
                 _LOGGER.error("doBearerRequest-BEARER json Exception: %s", res.text)
-                return res.text
+                return {}
+                # return res.text
         elif res.status_code == 204:
             self._just_updated = True
-            return True
+            return {}
+            # return True
 
         if not refreshed and res.status_code == 401:
             _LOGGER.debug("TOKEN EXPIRED: will refresh it (%s)", res.status_code)
