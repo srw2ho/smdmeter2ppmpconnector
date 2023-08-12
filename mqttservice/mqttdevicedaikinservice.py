@@ -670,12 +670,14 @@ class MqttDeviceDaikinService(MqttDeviceServiceBase):
             if IsConnected:
                 if hours_actsecs >= self.m_MQTT_REFRESH_TIME:
                     self.m_TimeSpan.setActTime(timestamp)
+                    logger.error(f"device: {self.m_MQTT_NETID} doProcess-async_update")
                     await self.m_daikinAPI.async_update()
                     self.readInputRegisters()
 
             else:
                 if hours_actsecs >= self.m_MQTT_CONNECT_TIME:
                     self.m_TimeSpan.setActTime(timestamp)
+                    logger.error(f"device: {self.m_MQTT_NETID} doProcess-connectDevice")
                     await self.connectDevice()
                     self.setDeviceState(DeviceState.ERROR)
                     logger.error(

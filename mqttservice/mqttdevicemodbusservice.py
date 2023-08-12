@@ -752,25 +752,29 @@ class MqttDeviceModbusService(MqttDeviceServiceBase):
             return self.m_MQTTPayload
 
     def doProcess(self):
-        IsConnected: bool = self.m_SMD_Device.connected()
+        try:
+            IsConnected: bool = self.m_SMD_Device.connected()
 
-        timestamp = datetime.now(timezone.utc).astimezone()
-        difference_act = self.m_TimeSpan.getTimeSpantoActTime()
-        hours_actsecs = self.m_TimeSpan.getTimediffernceintoSecs(difference_act)
+            timestamp = datetime.now(timezone.utc).astimezone()
+            difference_act = self.m_TimeSpan.getTimeSpantoActTime()
+            hours_actsecs = self.m_TimeSpan.getTimediffernceintoSecs(difference_act)
 
-        if IsConnected:
-            if hours_actsecs >= self.m_MQTT_REFRESH_TIME:
-                self.m_TimeSpan.setActTime(timestamp)
-                self.readInputRegisters()
+            if IsConnected:
+                if hours_actsecs >= self.m_MQTT_REFRESH_TIME:
+                    self.m_TimeSpan.setActTime(timestamp)
+                    self.readInputRegisters()
 
-        else:
-            if hours_actsecs >= self.m_MQTT_CONNECT_TIME:
-                self.m_TimeSpan.setActTime(timestamp)
-                self.doSMDDeviceconnect()
-                self.setDeviceState(DeviceState.ERROR)
-                logger.error(
-                    f"device: {self.m_MQTT_NETID} error: Disconnected -> Try Reconnect"
-                )
-                logger.info(
-                    f"device: {self.m_MQTT_NETID} error: Disconnected -> Try Reconnect"
-                )
+            else:
+                if hours_actsecs >= self.m_MQTT_CONNECT_TIME:
+                    self.m_TimeSpan.setActTime(timestamp)
+                    self.doSMDDeviceconnect()
+                    self.setDeviceState(DeviceState.ERROR)
+                    logger.error(
+                        f"device: {self.m_MQTT_NETID} error: Disconnected -> Try Reconnect"
+                    )
+                    logger.info(
+                        f"device: {self.m_MQTT_NETID} error: Disconnected -> Try Reconnect"
+                    )
+        except Exception as e:
+            logger.error(f"device: {self.m_MQTT_NETID}  doProcess : error:{e}")
+            logger.info(f"device: {self.m_MQTT_NETID}  doProcess : error:{e}")

@@ -32,16 +32,16 @@ from ppmpmessage.v3.device import iotHubDevice
 
 from tomlconfig.tomlutils import TomlParser
 
-PROJECT_NAME = 'sdmmeter2ppmpconnector'
+PROJECT_NAME = "sdmmeter2ppmpconnector"
 
 LOGFOLDER = "./logs/"
 
 # configure logging
-logger = logging.getLogger('root')
+logger = logging.getLogger("root")
 logger.setLevel(logging.INFO)
 
 # create formatter
-formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
 
 ch = logging.StreamHandler()
 ch.setLevel(logging.INFO)
@@ -53,28 +53,30 @@ logger.addHandler(ch)
 
 
 try:
-    os.mkdir(LOGFOLDER)
-    logger.info(f'create logfolder: {LOGFOLDER}')
+    if not os.path.exists(LOGFOLDER):
+        os.mkdir(LOGFOLDER)
+        logger.info(f"create logfolder: {LOGFOLDER}")
 except OSError as error:
-    logger.info(f'create logfolder: {LOGFOLDER}:{error}')
+    logger.info(f"create logfolder: {LOGFOLDER}:{error}")
 
 fl = RotatingFileHandler(
-    f'{LOGFOLDER}{PROJECT_NAME}.log', mode='a', maxBytes=2*(10**5), backupCount=10)
+    f"{LOGFOLDER}{PROJECT_NAME}.log", mode="a", maxBytes=2 * (10**5), backupCount=10
+)
 
 fl.setLevel(logging.ERROR)
 fl.setFormatter(formatter)
 logger.addHandler(fl)
 
-toml = TomlParser(f'{PROJECT_NAME}.toml')
+toml = TomlParser(f"{PROJECT_NAME}.toml")
 
-MQTT_NETWORK_NAME = toml.get('mqtt.network_name', 'mh')
-MQTT_TOPIC_PPMP = MQTT_NETWORK_NAME + '/+/' + 'ppmp'
-MQTT_TOPIC_INFO = MQTT_NETWORK_NAME + '/+/' + 'ppmp'
-MQTT_HOST = toml.get('mqtt.host', 'localhost')
-MQTT_PORT = toml.get('mqtt.port', 1883)
-MQTT_USERNAME = toml.get('mqtt.username', '')
-MQTT_PASSWORD = toml.get('mqtt.password', '')
-MQTT_TLS_CERT = toml.get('mqtt.tls_cert', '')
+MQTT_NETWORK_NAME = toml.get("mqtt.network_name", "mh")
+MQTT_TOPIC_PPMP = MQTT_NETWORK_NAME + "/+/" + "ppmp"
+MQTT_TOPIC_INFO = MQTT_NETWORK_NAME + "/+/" + "ppmp"
+MQTT_HOST = toml.get("mqtt.host", "localhost")
+MQTT_PORT = toml.get("mqtt.port", 1883)
+MQTT_USERNAME = toml.get("mqtt.username", "")
+MQTT_PASSWORD = toml.get("mqtt.password", "")
+MQTT_TLS_CERT = toml.get("mqtt.tls_cert", "")
 
 
 # create distributed queues for all threads
@@ -82,10 +84,16 @@ MQTT_TLS_CERT = toml.get('mqtt.tls_cert', '')
 # QUEUE_INFLUX = Queue(maxsize=0)
 
 
-
-
-def run_SMD_meter(alias, modbushost, modbusport, devid, metertype, timeout, refresrate,modbusbatchsleepinsec):
-    
+def run_SMD_meter(
+    alias,
+    modbushost,
+    modbusport,
+    devid,
+    metertype,
+    timeout,
+    refresrate,
+    modbusbatchsleepinsec,
+):
     mqttDeviceService = MqttDeviceModbusService(
         MQTT_HOST=MQTT_HOST,
         MQTT_PORT=MQTT_PORT,
@@ -96,64 +104,92 @@ def run_SMD_meter(alias, modbushost, modbusport, devid, metertype, timeout, refr
         MQTT_REFRESH_TIME=refresrate,
         MQTT_NETID=alias,
         MQTT_CONNECT_TIME=timeout,
-        MODBUS_BATCH_SLEEP=modbusbatchsleepinsec
+        MODBUS_BATCH_SLEEP=modbusbatchsleepinsec,
     )
-    
-    mqttDeviceService.createtMeterByType(metertype=metertype,modbushost=modbushost,modbusport=modbusport,timeout=timeout,devid=devid)
-    
+
+    mqttDeviceService.createtMeterByType(
+        metertype=metertype,
+        modbushost=modbushost,
+        modbusport=modbusport,
+        timeout=timeout,
+        devid=devid,
+    )
+
     isConnected = mqttDeviceService.connectDevice()
     # time.sleep(1)
-    
-      # doJson: bool = False
+
+    # doJson: bool = False
     RefreshTime: float = 0.2
     connectTime: int = timeout
 
     while True:
-
         isMQTTConnected = mqttDeviceService.isMQTTConnected()
         IsConnected: bool = mqttDeviceService.isDeviceConnected()
-        
 
         if isMQTTConnected:
             mqttDeviceService.doProcess()
         # time.sleep(0.2)
         time.sleep(RefreshTime)
+    
 
 
 async def start_smdmeters():
-
-    SMDMETERS_MODBUSHOST = toml.get('sdmmeters.tcpmodbushost', ['localhost'])
-    SMDMETERS_MODBUSALIAS = toml.get('sdmmeters.tcpmodbusalias', ['SDM630_1'])
-    SDMMETERS_MODBUSPORT = toml.get('sdmmeters.tcpmodbusport', [8086])
-    SMDMETERS_TYPE = toml.get('sdmmeters.metertype', ['SDM630'])
-    SDMMETETERS_REFRESHRATE = toml.get('sdmmeters.refreshrate', [2])
-    SDMMETETERS_CONNECTIONTIMEOUT = toml.get(
-        'sdmmeters.connectiontimeout', [2])
-    MODBUS_BATCH_SLEEPINSCS = toml.get(
-        'sdmmeters.modbusbatchsleepinsec', [0])
-    SDMMETERS_DEVICEID = toml.get('sdmmeters.deviceid', [2])
-
-
+    SMDMETERS_MODBUSHOST = toml.get("sdmmeters.tcpmodbushost", ["localhost"])
+    SMDMETERS_MODBUSALIAS = toml.get("sdmmeters.tcpmodbusalias", ["SDM630_1"])
+    SDMMETERS_MODBUSPORT = toml.get("sdmmeters.tcpmodbusport", [8086])
+    SMDMETERS_TYPE = toml.get("sdmmeters.metertype", ["SDM630"])
+    SDMMETETERS_REFRESHRATE = toml.get("sdmmeters.refreshrate", [2])
+    SDMMETETERS_CONNECTIONTIMEOUT = toml.get("sdmmeters.connectiontimeout", [2])
+    MODBUS_BATCH_SLEEPINSCS = toml.get("sdmmeters.modbusbatchsleepinsec", [0])
+    SDMMETERS_DEVICEID = toml.get("sdmmeters.deviceid", [2])
 
     # create own thread for each SMD-device
-    for alias, host, port, devid, metertypes, timeout, refresrate,modbusbatchsleepinsec  in zip(SMDMETERS_MODBUSALIAS, SMDMETERS_MODBUSHOST, SDMMETERS_MODBUSPORT, SDMMETERS_DEVICEID, SMDMETERS_TYPE, SDMMETETERS_CONNECTIONTIMEOUT, SDMMETETERS_REFRESHRATE,MODBUS_BATCH_SLEEPINSCS):
+    for (
+        alias,
+        host,
+        port,
+        devid,
+        metertypes,
+        timeout,
+        refresrate,
+        modbusbatchsleepinsec,
+    ) in zip(
+        SMDMETERS_MODBUSALIAS,
+        SMDMETERS_MODBUSHOST,
+        SDMMETERS_MODBUSPORT,
+        SDMMETERS_DEVICEID,
+        SMDMETERS_TYPE,
+        SDMMETETERS_CONNECTIONTIMEOUT,
+        SDMMETETERS_REFRESHRATE,
+        MODBUS_BATCH_SLEEPINSCS,
+    ):
         # create new thread for each OPC-UA client
-        thread = Thread(target=run_SMD_meter, args=(alias,
-                                                    host, port, devid, metertypes, timeout, refresrate,modbusbatchsleepinsec))
+        thread = Thread(
+            target=run_SMD_meter,
+            args=(
+                alias,
+                host,
+                port,
+                devid,
+                metertypes,
+                timeout,
+                refresrate,
+                modbusbatchsleepinsec,
+            ),
+        )
 
         thread.start()
 
 
-
 async def runDaikin():
     # await self.m_daikinAPI.retrieveAccessToken("wilschneider@kabelmail.de", "niknak@01W")
-                 
-    DAIKINUSER = toml.get('daikin.user', '')
-    DAIKINPW = toml.get('daikin.password', '')
-    DAIKINREFRESHRATE= toml.get('daikin.refreshrate', 5)
-    DAIKINCONNCTIONTIMEOUT= toml.get('daikin.connectiontimeout', 5)
+
+    DAIKINUSER = toml.get("daikin.user", "")
+    DAIKINPW = toml.get("daikin.password", "")
+    DAIKINREFRESHRATE = toml.get("daikin.refreshrate", 5)
+    DAIKINCONNCTIONTIMEOUT = toml.get("daikin.connectiontimeout", 5)
     RefreshTime: float = 0.2
-        
+
     mqttDeviceService = MqttDeviceDaikinService(
         MQTT_HOST=MQTT_HOST,
         MQTT_PORT=MQTT_PORT,
@@ -165,26 +201,28 @@ async def runDaikin():
         MQTT_CONNECT_TIME=DAIKINCONNCTIONTIMEOUT,
         MQTT_NETID="DaikinWP",
         DAIKINUSER=DAIKINUSER,
-        DAIKINPW=DAIKINPW
-    )      
-    
+        DAIKINPW=DAIKINPW,
+    )
+
     await mqttDeviceService.connectDevice()
-    
+
     while True:
         await mqttDeviceService.doProcess()
         time.sleep(RefreshTime)
 
-def main():
 
+def main():
     # start_smdmeters()
     loop = asyncio.get_event_loop()
     loop.run_until_complete(start_smdmeters())
-
+    
+    # logger.error(f"smdmeters.loop.run_until_complete")
+    
     loop.run_until_complete(runDaikin())
-
+    logger.error(f"runDaikin.loop.run_until_complete -closed")
     
     loop.close()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
