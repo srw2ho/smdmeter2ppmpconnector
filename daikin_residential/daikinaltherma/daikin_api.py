@@ -28,6 +28,7 @@ API_KEY2 = "3_QebFXhxEWDc8JhJdBWmvUd1e0AaWJCISbqe4QIHrk_KzNVJFJ4xsJ2UZbl8OIIFY"
 MIN_TIME_BETWEEN_UPDATES = datetime.timedelta(seconds=2)
 
 COMMUNICATIONERRORCOUNTER_MAX = 3
+COMMUNICATION_REQUESTTIMEOUT = (12.3, 30.0)
 
 
 class DaikinApi:
@@ -117,10 +118,17 @@ class DaikinApi:
                         "doBearerRequest-BEARER REQUEST JSON: %s", options["json"]
                     )
                     res = requests.patch(
-                        resourceUrl, headers=headers, data=options["json"]
+                        resourceUrl,
+                        headers=headers,
+                        data=options["json"],
+                        timeout=COMMUNICATION_REQUESTTIMEOUT,
                     )
                 else:
-                    res = requests.get(resourceUrl, headers=headers)
+                    res = requests.get(
+                        resourceUrl,
+                        headers=headers,
+                        timeout=COMMUNICATION_REQUESTTIMEOUT,
+                    )
 
             except Exception as e:
                 self._communicationErrorCounter = COMMUNICATIONERRORCOUNTER_MAX
@@ -173,7 +181,7 @@ class DaikinApi:
             "AuthParameters": {"REFRESH_TOKEN": self.tokenSet["refresh_token"]},
         }
         try:
-            res = requests.post(url, headers=headers, json=ref_json)
+            res = requests.post(url, headers=headers, json=ref_json, timeout=COMMUNICATION_REQUESTTIMEOUT)
         except Exception as e:
             _LOGGER.error("refreshAccessToken-REQUEST FAILED: %s", e)
         _LOGGER.debug("refreshAccessToken response code: %s", res.status_code)
@@ -320,7 +328,7 @@ class DaikinApi:
 
         # Extract SAML Context
         try:
-            response = requests.get(location, allow_redirects=False)
+            response = requests.get(location, allow_redirects=False,  timeout=COMMUNICATION_REQUESTTIMEOUT)
 
             location = response.headers["location"]
             # _LOGGER.debug('LOCATION2: %s', location)
@@ -335,7 +343,7 @@ class DaikinApi:
         # Extract API version
         try:
             resp = requests.get(
-                "https://cdns.gigya.com/js/gigya.js", {"apiKey": API_KEY}
+                "https://cdns.gigya.com/js/gigya.js", {"apiKey": API_KEY}, timeout=COMMUNICATION_REQUESTTIMEOUT
             )
             # resp = await (func)
             body = resp.text
@@ -351,7 +359,7 @@ class DaikinApi:
         try:
             resp = requests.get(
                 "https://cdc.daikin.eu/accounts.webSdkBootstrap",
-                {"apiKey": API_KEY, "sdk": "js_latest", "format": "json"},
+                {"apiKey": API_KEY, "sdk": "js_latest", "format": "json"}, timeout=COMMUNICATION_REQUESTTIMEOUT
             )
             ssoCookies = resp.headers["set-cookie"]
             # _LOGGER.debug('SSOCOOKIES: %s', ssoCookies)
@@ -403,6 +411,7 @@ class DaikinApi:
                 "https://cdc.daikin.eu/accounts.login",
                 headers=headers,
                 data=req_json,
+                timeout=COMMUNICATION_REQUESTTIMEOUT
             )
             response = resp.json()
             _LOGGER.debug("LOGIN REPLY: %s", response)
@@ -434,7 +443,7 @@ class DaikinApi:
             headers = {"cookie": cookies}
             req_json = {"samlContext": samlContext, "loginToken": login_token}
             url = "https://cdc.daikin.eu/saml/v2.0/" + API_KEY + "/idp/sso/continue"
-            resp = requests.post(url, headers=headers, data=req_json)
+            resp = requests.post(url, headers=headers, data=req_json, timeout=COMMUNICATION_REQUESTTIMEOUT)
             response = resp.text
             # _LOGGER.debug('SAML: %s', response)
             regex = 'name="SAMLResponse" value="([^"]+)"'
@@ -464,6 +473,7 @@ class DaikinApi:
                 headers=headers,
                 data=req_json,
                 allow_redirects=False,
+                timeout=COMMUNICATION_REQUESTTIMEOUT
             )
             # response = await self.hass.async_add_executor_job(func)
             daikinunified_url = response.headers["location"]
