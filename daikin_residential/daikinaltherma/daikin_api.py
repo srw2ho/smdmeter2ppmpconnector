@@ -130,10 +130,15 @@ class DaikinApi:
                         timeout=COMMUNICATION_REQUESTTIMEOUT,
                     )
 
+            except requests.exceptions.Timeout as e:
+                _LOGGER.error("doBearerRequest-BEARER REQUEST TIMEOUT FAILED: %s", e)
+                self._communicationErrorCounter = self._communicationErrorCounter + 1
+                return {}
             except Exception as e:
                 self._communicationErrorCounter = COMMUNICATIONERRORCOUNTER_MAX
                 _LOGGER.error("doBearerRequest-REQUEST FAILED: %s", e)
                 return {}
+
             _LOGGER.debug("doBearerRequest-BEARER RESPONSE CODE: %s", res.status_code)
 
         if res.status_code == 200:
@@ -181,7 +186,12 @@ class DaikinApi:
             "AuthParameters": {"REFRESH_TOKEN": self.tokenSet["refresh_token"]},
         }
         try:
-            res = requests.post(url, headers=headers, json=ref_json, timeout=COMMUNICATION_REQUESTTIMEOUT)
+            res = requests.post(
+                url,
+                headers=headers,
+                json=ref_json,
+                timeout=COMMUNICATION_REQUESTTIMEOUT,
+            )
         except Exception as e:
             _LOGGER.error("refreshAccessToken-REQUEST FAILED: %s", e)
         _LOGGER.debug("refreshAccessToken response code: %s", res.status_code)
@@ -328,7 +338,9 @@ class DaikinApi:
 
         # Extract SAML Context
         try:
-            response = requests.get(location, allow_redirects=False,  timeout=COMMUNICATION_REQUESTTIMEOUT)
+            response = requests.get(
+                location, allow_redirects=False, timeout=COMMUNICATION_REQUESTTIMEOUT
+            )
 
             location = response.headers["location"]
             # _LOGGER.debug('LOCATION2: %s', location)
@@ -343,7 +355,9 @@ class DaikinApi:
         # Extract API version
         try:
             resp = requests.get(
-                "https://cdns.gigya.com/js/gigya.js", {"apiKey": API_KEY}, timeout=COMMUNICATION_REQUESTTIMEOUT
+                "https://cdns.gigya.com/js/gigya.js",
+                {"apiKey": API_KEY},
+                timeout=COMMUNICATION_REQUESTTIMEOUT,
             )
             # resp = await (func)
             body = resp.text
@@ -359,7 +373,8 @@ class DaikinApi:
         try:
             resp = requests.get(
                 "https://cdc.daikin.eu/accounts.webSdkBootstrap",
-                {"apiKey": API_KEY, "sdk": "js_latest", "format": "json"}, timeout=COMMUNICATION_REQUESTTIMEOUT
+                {"apiKey": API_KEY, "sdk": "js_latest", "format": "json"},
+                timeout=COMMUNICATION_REQUESTTIMEOUT,
             )
             ssoCookies = resp.headers["set-cookie"]
             # _LOGGER.debug('SSOCOOKIES: %s', ssoCookies)
@@ -411,7 +426,7 @@ class DaikinApi:
                 "https://cdc.daikin.eu/accounts.login",
                 headers=headers,
                 data=req_json,
-                timeout=COMMUNICATION_REQUESTTIMEOUT
+                timeout=COMMUNICATION_REQUESTTIMEOUT,
             )
             response = resp.json()
             _LOGGER.debug("LOGIN REPLY: %s", response)
@@ -443,7 +458,12 @@ class DaikinApi:
             headers = {"cookie": cookies}
             req_json = {"samlContext": samlContext, "loginToken": login_token}
             url = "https://cdc.daikin.eu/saml/v2.0/" + API_KEY + "/idp/sso/continue"
-            resp = requests.post(url, headers=headers, data=req_json, timeout=COMMUNICATION_REQUESTTIMEOUT)
+            resp = requests.post(
+                url,
+                headers=headers,
+                data=req_json,
+                timeout=COMMUNICATION_REQUESTTIMEOUT,
+            )
             response = resp.text
             # _LOGGER.debug('SAML: %s', response)
             regex = 'name="SAMLResponse" value="([^"]+)"'
@@ -473,7 +493,7 @@ class DaikinApi:
                 headers=headers,
                 data=req_json,
                 allow_redirects=False,
-                timeout=COMMUNICATION_REQUESTTIMEOUT
+                timeout=COMMUNICATION_REQUESTTIMEOUT,
             )
             # response = await self.hass.async_add_executor_job(func)
             daikinunified_url = response.headers["location"]
