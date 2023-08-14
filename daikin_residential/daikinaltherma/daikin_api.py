@@ -28,7 +28,7 @@ API_KEY2 = "3_QebFXhxEWDc8JhJdBWmvUd1e0AaWJCISbqe4QIHrk_KzNVJFJ4xsJ2UZbl8OIIFY"
 MIN_TIME_BETWEEN_UPDATES = datetime.timedelta(seconds=2)
 
 COMMUNICATIONERRORCOUNTER_MAX = 3
-COMMUNICATION_REQUESTTIMEOUT = (12.3, 30.0)
+COMMUNICATION_REQUESTTIMEOUT = (31.0, 36.0)
 
 
 class DaikinApi:
@@ -139,10 +139,12 @@ class DaikinApi:
                 _LOGGER.error("doBearerRequest-REQUEST FAILED: %s", e)
                 return {}
 
+
             _LOGGER.debug("doBearerRequest-BEARER RESPONSE CODE: %s", res.status_code)
 
         if res.status_code == 200:
             try:
+                self._communicationErrorCounter = 0
                 return res.json()
             except Exception:
                 self._communicationErrorCounter = self._communicationErrorCounter + 1
