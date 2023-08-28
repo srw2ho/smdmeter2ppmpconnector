@@ -678,8 +678,10 @@ class MqttDeviceDaikinService(MqttDeviceServiceBase):
                 if hours_actsecs >= self.m_MQTT_CONNECT_TIME:
                     self.m_TimeSpan.setActTime(timestamp)
                     # logger.error(f"device: {self.m_MQTT_NETID} doProcess-connectDevice")
-                    await self.connectDevice()
+
                     self.setDeviceState(DeviceState.ERROR)
+                    await self.connectDevice()
+
                     logger.error(
                         f"device: {self.m_MQTT_NETID} error: Disconnected -> Try Reconnect"
                     )
