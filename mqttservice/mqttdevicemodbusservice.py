@@ -761,14 +761,16 @@ class MqttDeviceModbusService(MqttDeviceServiceBase):
 
             if IsConnected:
                 if hours_actsecs >= self.m_MQTT_REFRESH_TIME:
+                    self.setDeviceState(DeviceState.OK)
                     self.m_TimeSpan.setActTime(timestamp)
                     self.readInputRegisters()
 
             else:
                 if hours_actsecs >= self.m_MQTT_CONNECT_TIME:
+                    self.setDeviceState(DeviceState.ERROR)
                     self.m_TimeSpan.setActTime(timestamp)
                     self.doSMDDeviceconnect()
-                    self.setDeviceState(DeviceState.ERROR)
+
                     logger.error(
                         f"device: {self.m_MQTT_NETID} error: Disconnected -> Try Reconnect"
                     )
