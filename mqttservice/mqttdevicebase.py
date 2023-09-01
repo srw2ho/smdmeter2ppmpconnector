@@ -47,7 +47,7 @@ class MqttDeviceServiceBase(object):
         INFODEBUGLEVEL=1,
         MQTT_REFRESH_TIME=1.0,
         MQTT_NETID="PLC1",
-        MQTT_CONNECT_TIME=5
+        MQTT_CONNECT_TIME=5,
     ):
         self.m_MQTT_NETID = MQTT_NETID
 
@@ -232,12 +232,8 @@ class MqttDeviceServiceBase(object):
     def on_connect(self, client, userdata, flags, rc):
         return
 
-       
-
     def publish_MQTTMetaData(self):
         return
-
-    
 
     def getDeviceServicesTopic(self) -> str:
         topic = f"mh/DeviceServices/{self.m_MQTT_NETID}"
@@ -247,10 +243,9 @@ class MqttDeviceServiceBase(object):
         self.m_onMqttConnected = False
         logger.info(f"MQTT-Client: on_disconnect")
 
-    
     def doStartProcessCommandThred(self):
         threading.Thread(target=self.MQTTConsumeQueue).start()
-        
+
     def doMQTTconnect(self):
         """Establish connection to MQTT-Broker"""
 
@@ -269,9 +264,6 @@ class MqttDeviceServiceBase(object):
                 connectHandler=self.on_connect, disconnectHandler=self.on_disconnect
             )
             self.doStartProcessCommandThred()
-
-
-
 
     def getMetaKeyByKey(self, key: str) -> str:
         return f"@{self.m_MQTT_NETID}.{key}"
@@ -311,16 +303,18 @@ class MqttDeviceServiceBase(object):
 
                 # write changed Values over MQTT
                 for k, v in changedPayload.items():
-                    self._mqtt_client.publish(
-                        self.getTopicByKey(k),
-                        json.dumps(v),
-                        retain=retained,
-                    )
-                self.m_lastMQTTPayload.update(jsonpayload)
+                    try:
+                        self._mqtt_client.publish(
+                            self.getTopicByKey(k),
+                            json.dumps(v),
+                            retain=retained,
+                        )
+                    except Exception as e:
+                        logger.error(f"doPublishPayload: publish : Error->{e}")
+                if len(changedPayload.keys()) > 0:
+                    self.m_lastMQTTPayload.update(jsonpayload)
             else:
-                logger.error(
-                    f"publish_single_cached_value: error-> MQTT is not connected"
-                )
+                logger.error(f"doPublishPayload: error-> MQTT is not connected")
         finally:
             self.m_lock.release()
 
@@ -338,7 +332,6 @@ class MqttDeviceServiceBase(object):
         try:
             return {}
 
-       
         finally:
             return {}
 
