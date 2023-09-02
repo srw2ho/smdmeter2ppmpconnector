@@ -41,5 +41,6 @@ connectiontimeout =  [ 2,2,2]
 
 ### Usage
 ```bash
-python -m smdmeter2ppmpconnector
+
+
 ```
