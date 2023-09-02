@@ -298,7 +298,7 @@ class MqttDeviceServiceBase(object):
                 changedPayload = {
                     k: self.getPayloadfromValue(k, v)
                     for k, v in jsonpayload.items()
-                    if isValueChanged(k, v)
+                    # if isValueChanged(k, v)
                 }
 
                 # write changed Values over MQTT
@@ -311,8 +311,9 @@ class MqttDeviceServiceBase(object):
                         )
                     except Exception as e:
                         logger.error(f"doPublishPayload: publish : Error->{e}")
-                if len(changedPayload.keys()) > 0:
-                    self.m_lastMQTTPayload.update(jsonpayload)
+                self.m_lastMQTTPayload.update(jsonpayload)       
+                # if len(changedPayload.keys()) > 0:
+                #     self.m_lastMQTTPayload.update(jsonpayload)
             else:
                 logger.error(f"doPublishPayload: error-> MQTT is not connected")
         finally:
