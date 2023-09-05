@@ -3,9 +3,11 @@ import setuptools
 NAME = "smdmeter2ppmpconnector"
 
 DEPENDENCIES_ARTIFACTORY = [
-    'pymodbus',
-    'pyserial-asyncio',
-    'oic'
+    # 'pymodbus==3.5.0',
+    # 'pyserial-asyncio==0.6',
+    "pymodbus",
+    "pyserial-asyncio",
+    "oic",
 ]
 
 DEPENDENCIES_GITHUB = {
@@ -15,21 +17,26 @@ DEPENDENCIES_GITHUB = {
     "https://github.com/srw2ho/tomlconfig.git": "",
 }
 
+
 def generate_pip_links_from_url(url, version):
-    """ Generate pip compatible links from Socialcoding clone URLs
+    """Generate pip compatible links from Socialcoding clone URLs
 
     Arguments:
         url {str} -- Clone URL from Socialcoding
     """
-    package = url.split('/')[-1].split('.')[0]
+    package = url.split("/")[-1].split(".")[0]
     url = url.replace("https://", f"{package} @ git+https://")
     if version:
         url = url + f"@{version}"
 
     return url
 
+
 # create pip compatible links
-DEPENDENCIES_GITHUB = [generate_pip_links_from_url(url, version) for url, version in DEPENDENCIES_GITHUB.items()]
+DEPENDENCIES_GITHUB = [
+    generate_pip_links_from_url(url, version)
+    for url, version in DEPENDENCIES_GITHUB.items()
+]
 DEPENDENCIES = DEPENDENCIES_ARTIFACTORY + DEPENDENCIES_GITHUB
 
 with open("README.md", "r") as fh:
@@ -50,13 +57,12 @@ setuptools.setup(
     packages=setuptools.find_packages(),
     package_data={},
     setup_requires=[
-        'Cython',
-        'setuptools-git-versioning<2',
+        "Cython",
+        "setuptools-git-versioning<2",
     ],
     install_requires=DEPENDENCIES,
     classifiers=[
         "Programming Language :: Python :: 3",
-        "License :: Other/Proprietary License"
-        "Operating System :: OS Independent",
+        "License :: Other/Proprietary License" "Operating System :: OS Independent",
     ],
 )
