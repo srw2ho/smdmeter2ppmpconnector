@@ -265,6 +265,8 @@ class Meter:
                 builder.add_32bit_uint(data)
             elif dtype == registerDataType.INT16:
                 builder.add_16bit_int(int(data))
+            elif dtype == registerDataType.UINT16:
+                builder.add_16bit_uint(int(data))
             else:
                 raise NotImplementedError(dtype)
         except NotImplementedError:
