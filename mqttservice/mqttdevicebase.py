@@ -72,6 +72,7 @@ class MqttDeviceServiceBase(object):
         self.m_doMQTTConnect = False
         self.m_HoldingBatchRegister = {}
         self.m_TimeSpan = TimeSpan()
+        self.m_TimeSpan_Holding = TimeSpan()
 
         self._mqtt_client = MQTTClient(
             host=MQTT_HOST,

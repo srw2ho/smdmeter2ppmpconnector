@@ -424,6 +424,7 @@ class MqttDeviceModbusService(MqttDeviceServiceBase):
         self.publish_MQTTMetaData()
         self.subscribeMQTTWriteTopis()
 
+
         logger.info(f"MQTT-Client: on_connect -> publish_cached_values()")
 
         # self.publish_cached_values()
@@ -758,8 +759,14 @@ class MqttDeviceModbusService(MqttDeviceServiceBase):
             timestamp = datetime.now(timezone.utc).astimezone()
             difference_act = self.m_TimeSpan.getTimeSpantoActTime()
             hours_actsecs = self.m_TimeSpan.getTimediffernceintoSecs(difference_act)
+            difference_act_holding = self.m_TimeSpan_Holding.getTimeSpantoActTime()
+            hours_actsecs_holding = self.m_TimeSpan_Holding.getTimediffernceintoSecs(difference_act_holding)
 
             if IsConnected:
+                if hours_actsecs_holding >= self.m_MQTT_REFRESH_TIME*30:
+                    self.restoreBatchfordallHoldingRegisters()
+                    self.m_TimeSpan_Holding.setActTime(timestamp)
+                    
                 if hours_actsecs >= self.m_MQTT_REFRESH_TIME:
                     self.setDeviceState(DeviceState.OK)
                     self.m_TimeSpan.setActTime(timestamp)
