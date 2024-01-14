@@ -56,8 +56,8 @@ class SPH_TL3_BH_UP(Growatt):
             "Vac_ST": (51, 1, meter.registerType.INPUT, meter.registerDataType.UINT16, float, "Three phase grid voltage", "V", 1, 0.1),     
             "Vac_TR": (52, 1, meter.registerType.INPUT, meter.registerDataType.UINT16, float, "Three phase grid voltage", "V", 1, 0.1),                   
          
-            "Eactoday": (53, 2, meter.registerType.INPUT, meter.registerDataType.UINT32, float, "Today_generate energy", "kW", 1, 0.1),
-            "Eactotal": (55, 2, meter.registerType.INPUT, meter.registerDataType.UINT32, float, "Total_generate energy", "kW", 1, 0.1),
+            "Eactoday": (53, 2, meter.registerType.INPUT, meter.registerDataType.UINT32, float, "Today_generate energy", "kWh", 1, 0.1),
+            "Eactotal": (55, 2, meter.registerType.INPUT, meter.registerDataType.UINT32, float, "Total_generate energy", "kWh", 1, 0.1),
             "Time_total": (57, 2, meter.registerType.INPUT, meter.registerDataType.UINT32, float, "Time total", "s", 1, 0.5),
             "Epv1_today": (59, 2, meter.registerType.INPUT, meter.registerDataType.UINT32, float, "PV1_Energy today", "kW", 1, 0.1),
             "Epv1_total": (61, 2, meter.registerType.INPUT, meter.registerDataType.UINT32, float, "PV1_Energy total", "kW", 1, 0.1),
