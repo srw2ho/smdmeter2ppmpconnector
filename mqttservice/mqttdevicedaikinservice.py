@@ -119,6 +119,7 @@ class MqttDeviceDaikinService(MqttDeviceServiceBase):
 
                     self.doMQTTconnect()
                     self.setDeviceState(DeviceState.OK)
+
                     break
                 else:
                     self.setDeviceState(DeviceState.ERROR)
@@ -263,7 +264,9 @@ class MqttDeviceDaikinService(MqttDeviceServiceBase):
         # delete previous Topic
         self._mqtt_client.publish(self.getDeviceServicesTopic(), None, retain=True)
         # self._mqtt_client.publish(self.m_device.info_topic(), None, retain=True)
-
+        
+        self.setDeviceState(devicestate=DeviceState.ERROR)
+        
         allregisterPayload = self.readallRegisters()
         # bei start alle retained Senden
         self.doPublishPayload(allregisterPayload, retained=True)

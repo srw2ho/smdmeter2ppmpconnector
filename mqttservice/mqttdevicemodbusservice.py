@@ -415,7 +415,9 @@ class MqttDeviceModbusService(MqttDeviceServiceBase):
         # delete previous Topic
         self._mqtt_client.publish(self.getDeviceServicesTopic(), None, retain=True)
         # self._mqtt_client.publish(self.m_device.info_topic(), None, retain=True)
-
+        
+        self.setDeviceState(devicestate=DeviceState.ERROR)
+       
         self.restoreBatchfordallHoldingRegisters()
         allregisterPayload = self.readallRegisters()
         # bei start alle retained Senden
