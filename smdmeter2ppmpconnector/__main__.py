@@ -12,6 +12,7 @@ from daikin_residential.daikinaltherma.daikin_api import DaikinApi
 from daikin_residential.daikinaltherma.daikin_base import Appliance
 from daikin_residential.daikinaltherma.sensor import DaikinSensor
 from daikin_residential.daikinaltherma.water_heater import DaikinWaterTank
+from mqttservice.mqttdeviceespaltherma import MqttDeviceESPAltherma
 from mqttservice.mqttdevicedaikinservice import MqttDeviceDaikinService
 from mqttservice.mqttdevicemodbusservice import MqttDeviceModbusService
 import sdm_modbus
@@ -83,6 +84,42 @@ MQTT_TLS_CERT = toml.get("mqtt.tls_cert", "")
 # QUEUE_MQTT = Queue(maxsize=0)
 # QUEUE_INFLUX = Queue(maxsize=0)
 
+def run_ESPAltherma(
+    alias,
+    timeout,
+    refresrate,
+
+):
+    mqttDeviceService = MqttDeviceESPAltherma(
+        MQTT_HOST=MQTT_HOST,
+        MQTT_PORT=MQTT_PORT,
+        MQTT_USERNAME=MQTT_USERNAME,
+        MQTT_PASSWORD=MQTT_PASSWORD,
+        MQTT_TLS_CERT=MQTT_TLS_CERT,
+        INFODEBUGLEVEL=1,
+        MQTT_REFRESH_TIME=refresrate,
+        MQTT_NETID=alias,
+        MQTT_CONNECT_TIME=timeout,
+    )
+
+  
+
+    isConnected = mqttDeviceService.connectDevice()
+    # time.sleep(1)
+
+    # doJson: bool = False
+    RefreshTime: float = 0.2
+    connectTime: int = timeout
+
+    while True:
+        isMQTTConnected = mqttDeviceService.isMQTTConnected()
+
+
+        if isMQTTConnected:
+            mqttDeviceService.doProcess()
+        # time.sleep(0.2)
+        time.sleep(RefreshTime)
+        
 
 def run_SMD_meter(
     alias,
@@ -132,6 +169,48 @@ def run_SMD_meter(
         time.sleep(RefreshTime)
     
 
+
+
+async def start_ESPAltherma():
+    EPSALTHERMA_ALIAS = toml.get("espaltherma.alias", "ESPAltherma")
+
+    EPSALTHERMA_REFRESHRATE = toml.get("espaltherma.refreshrate", 2)
+    EPSALTHERMA_CONNECTIONTIMEOUT = toml.get("espaltherma.connectiontimeout", 2)
+
+
+    # create own thread for each SMD-device
+    # for (
+    #     alias,
+    #     host,
+    #     port,
+    #     devid,
+    #     metertypes,
+    #     timeout,
+    #     refresrate,
+
+    # ) in zip(
+    #     SMDMETERS_MODBUSALIAS,
+    #     SMDMETERS_MODBUSHOST,
+    #     SDMMETERS_MODBUSPORT,
+    #     SDMMETERS_DEVICEID,
+    #     SMDMETERS_TYPE,
+    #     SDMMETETERS_CONNECTIONTIMEOUT,
+    #     SDMMETETERS_REFRESHRATE,
+
+    # ):
+        # create new thread for each OPC-UA client
+    thread = Thread(
+            target=run_ESPAltherma,
+            args=(
+                EPSALTHERMA_ALIAS,
+                EPSALTHERMA_CONNECTIONTIMEOUT,
+                EPSALTHERMA_REFRESHRATE,
+
+            ),
+        )
+
+    thread.start()
+        
 
 async def start_smdmeters():
     SMDMETERS_MODBUSHOST = toml.get("sdmmeters.tcpmodbushost", ["localhost"])
@@ -214,11 +293,13 @@ async def runDaikin():
 def main():
     # start_smdmeters()
     loop = asyncio.get_event_loop()
-    loop.run_until_complete(start_smdmeters())
     
-    # logger.error(f"smdmeters.loop.run_until_complete")
     
-    loop.run_until_complete(runDaikin())
+    loop.run_until_complete(start_ESPAltherma())
+    
+    # loop.run_until_complete(start_smdmeters())
+    
+    # loop.run_until_complete(runDaikin())
     logger.error(f"runDaikin.loop.run_until_complete -closed")
     
     loop.close()
