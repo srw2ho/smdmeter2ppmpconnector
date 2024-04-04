@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import re
 import threading
 from mqttconnector.client import MQTTClient
 from ppmpmessage.v3.device_state import DeviceState
@@ -65,7 +66,7 @@ class MqttDeviceESPAltherma(MqttDeviceServiceBase):
             MQTT_NETID=MQTT_NETID,
             MQTT_CONNECT_TIME=MQTT_CONNECT_TIME,
         )
-        self.m_SMD_Device = None
+
      
 
    
@@ -76,58 +77,14 @@ class MqttDeviceESPAltherma(MqttDeviceServiceBase):
     def connectDevice(self) -> bool:
 
         self.doMQTTconnect()
-        self.setDeviceState(DeviceState.OK)
+        # self.setDeviceState(DeviceState.OK)
                 
     
 
-    def isDeviceConnected(self) -> bool:
-        return self.m_SMD_Device.connected()
 
     def isMQTTConnected(self) -> bool:
         return self.m_onMqttConnected
 
-    # def readControlChannelFile(self) -> bool:
-    #     try:
-
-    #         def getCtrlchannelResultdata(value) -> dict:
-    #             if "ctrlchannel" in value:
-    #                 return {"ctrlchannel": value["ctrlchannel"]}
-    #             return {}
-
-    #         self.m_configControlChannel = {}
-
-    #         with open(self.m_configControlChannelSettingPath) as fObj:
-    #             # fObj = open(filename)
-    #             data = json.load(fObj)
-    #             resultdata = {
-    #                 key: getCtrlchannelResultdata(value) for key, value in data.items()
-    #             }
-
-    #             self.m_configControlChannel = resultdata
-
-    #             return True
-    #     except Exception as error:
-    #         # logger.error(f"readControlChannelFile Error: {error}")
-
-    #         return False
-
-    # def writeMetaDataToFile(self) -> bool:
-    #     try:
-    #         json_object = json.dumps(self.m_MetaData, indent=4)
-    #         with open(self.m_metaDataOutFilePath, "w") as fObj:
-    #             fObj.write(json_object)
-    #             return True
-    #     except Exception as error:
-    #         logger.error(f"writeMetaDataToFile Error: {error}")
-    #         # logger.info(
-    #         #     f'readSequencerTemplates.writeMetaDataToFile Error: {error}')
-    #         return False
-
-    # def getTopicByKey(self, key: str) -> str:
-    #     replaced = key
-    #     topic = f"mh/{SERVICE_DEVICE_NAME}/{self.m_MQTT_NETID}/data/{replaced}"
-
-    #     return topic
 
     def doMQTTProcessCommand(self, command):
         """Wait for items in the queue and process these items"""
@@ -209,11 +166,31 @@ class MqttDeviceESPAltherma(MqttDeviceServiceBase):
         Arguments:
             payload {obj} -- JSON payload in PPMP format
         """
+        def filter(key:str, value:any) -> any:
+            if key =="[HPSU] Bypass valve position (0:Bypass 100:Emitter)":
+                a = 1
+            if isinstance(value, str):
+                x= re.match(r'^[-0-9.]+', value)
+                if x: 
+                    value = float(x.group())
+                return value
+            return float(value)
+        
         try:
-            action:dict = json.loads(payload)
-            self.m_MQTTPayload = action
-            self.doPublishPayload(action,retained=True)
-  
+            actions:dict = json.loads(payload)
+            filteredpayload = {key: filter(key, value) for key,value in actions.items()}
+            self.doPublishPayload(filteredpayload,retained=True)
+            
+            acttime = local_now()
+            simplevars = SimpleVariables(
+                        self.m_ctrldevice, filteredpayload, acttime
+                    )
+
+            ppmppayload = simplevars.to_ppmp()
+            self._mqtt_client.publish(
+                        self.m_ctrldevice.ppmp_topic(), ppmppayload, retain=False
+                    )
+    
 
         # logger.info(f'MQTT Queue size: {QUEUE_MQTT.qsize()}')
         except (Exception) as error:
@@ -249,7 +226,8 @@ class MqttDeviceESPAltherma(MqttDeviceServiceBase):
             payload {obj} -- JSON payload in PPMP format
         """
         try:
-            out = str(payload)
+            out = payload.decode("utf-8")
+
             # action:dict = json.loads(payload)
   
 

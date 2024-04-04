@@ -166,7 +166,8 @@ class MqttDeviceServiceBase(object):
             return False
 
     def getTopicByKey(self, key: str) -> str:
-        replaced = key
+
+        replaced = key.replace("/", "_")
         topic = f"mh/{SERVICE_DEVICE_NAME}/{self.m_MQTT_NETID}/data/{replaced}"
 
         return topic
