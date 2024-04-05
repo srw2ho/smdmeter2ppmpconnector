@@ -52,8 +52,7 @@ class MqttDeviceESPAltherma(MqttDeviceServiceBase):
         INFODEBUGLEVEL=1,
         MQTT_REFRESH_TIME=1.0,
         MQTT_NETID="PLC1",
-        MQTT_CONNECT_TIME=5
-
+        MQTT_CONNECT_TIME=5,
     ):
         super().__init__(
             MQTT_HOST=MQTT_HOST,
@@ -67,24 +66,16 @@ class MqttDeviceESPAltherma(MqttDeviceServiceBase):
             MQTT_CONNECT_TIME=MQTT_CONNECT_TIME,
         )
 
-     
-
-   
     def doStartProcessCommandThred(self):
         pass
 
-            
     def connectDevice(self) -> bool:
 
         self.doMQTTconnect()
         # self.setDeviceState(DeviceState.OK)
-                
-    
-
 
     def isMQTTConnected(self) -> bool:
         return self.m_onMqttConnected
-
 
     def doMQTTProcessCommand(self, command):
         """Wait for items in the queue and process these items"""
@@ -161,66 +152,68 @@ class MqttDeviceESPAltherma(MqttDeviceServiceBase):
             logger.error(f"MQTTConsumeQueue Parse error: {exception}")
 
     def handle_espaltherma_attr(self, topic: str, payload: any):
-        """ Subscribe to MQTT changes and write payload into queue
+        """Subscribe to MQTT changes and write payload into queue
 
         Arguments:
             payload {obj} -- JSON payload in PPMP format
         """
-        def filter(key:str, value:any) -> any:
-            if key =="[HPSU] Bypass valve position (0:Bypass 100:Emitter)":
+
+        def filter(key: str, value: any) -> any:
+            if key == "[HPSU] Bypass valve position (0:Bypass 100:Emitter)":
                 a = 1
             if isinstance(value, str):
-                x= re.match(r'^[-0-9.]+', value)
-                if x: 
+                x = re.match(r"^[-0-9.]+", value)
+                if x:
                     value = float(x.group())
                 return value
             return float(value)
-        
+
         try:
-            actions:dict = json.loads(payload)
-            filteredpayload = {key: filter(key, value) for key,value in actions.items()}
-            self.doPublishPayload(filteredpayload,retained=True)
-            
+            actions: dict = json.loads(payload)
+            filteredpayload = {
+                key: filter(key, value) for key, value in actions.items()
+            }
+            self.m_MQTTPayload = filteredpayload
+            self.doPublishPayload(filteredpayload, retained=True)
+
             acttime = local_now()
-            simplevars = SimpleVariables(
-                        self.m_ctrldevice, filteredpayload, acttime
-                    )
+            simplevars = SimpleVariables(self.m_ctrldevice, filteredpayload, acttime)
 
             ppmppayload = simplevars.to_ppmp()
             self._mqtt_client.publish(
-                        self.m_ctrldevice.ppmp_topic(), ppmppayload, retain=False
-                    )
-    
+                self.m_ctrldevice.ppmp_topic(), ppmppayload, retain=False
+            )
 
+            subscriptions = self._mqtt_client.getSubscriptions()
+            if "espaltherma/LWT" not in subscriptions:
+                self._mqtt_client.subscribe("espaltherma/LWT", self.handle_espaltherma_lwt)
         # logger.info(f'MQTT Queue size: {QUEUE_MQTT.qsize()}')
-        except (Exception) as error:
-            logger.info(
-                f'MQTTServiceDevice.handle_espaltherma_attr!{error}')
-            logger.error(
-                f'MQTTServiceDevice.handle_espaltherma_attr!{error}')
+        except Exception as error:
+            logger.info(f"MQTTServiceDevice.handle_espaltherma_attr!{error}")
+            logger.error(f"MQTTServiceDevice.handle_espaltherma_attr!{error}")
 
     def handle_espaltherma_lwt(self, topic: str, payload: any):
-        """ Subscribe to MQTT changes and write payload into queue
+        """Subscribe to MQTT changes and write payload into queue
 
         Arguments:
             payload {obj} -- JSON payload in PPMP format
         """
         try:
-            action:dict = json.loads(payload)
+            action = payload.decode("utf-8")
+            # action: dict = json.loads(payload)
             if action == "Online":
+                self.publish_MQTTMetaData()
                 self.setDeviceState(devicestate=DeviceState.OK)
             else:
                 self.setDeviceState(devicestate=DeviceState.ERROR)
-                
+
         # logger.info(f'MQTT Queue size: {QUEUE_MQTT.qsize()}')
-        except (Exception) as error:
-            logger.info(
-                f'MQTTServiceDevice.handle_espaltherma_lwt!{error}')
-            logger.error(
-                f'MQTTServiceDevice.handle_espaltherma_lwt!{error}')
+        except Exception as error:
+            logger.info(f"MQTTServiceDevice.handle_espaltherma_lwt!{error}")
+            logger.error(f"MQTTServiceDevice.handle_espaltherma_lwt!{error}")
 
     def handle_espaltherma_log(self, topic: str, payload: any):
-        """ Subscribe to MQTT changes and write payload into queue
+        """Subscribe to MQTT changes and write payload into queue
 
         Arguments:
             payload {obj} -- JSON payload in PPMP format
@@ -229,45 +222,42 @@ class MqttDeviceESPAltherma(MqttDeviceServiceBase):
             out = payload.decode("utf-8")
 
             # action:dict = json.loads(payload)
-  
-
+            logger.info(f"MQTTServiceDevice.handle_espaltherma_log->{out}")
         # logger.info(f'MQTT Queue size: {QUEUE_MQTT.qsize()}')
-        except (Exception) as error:
-            logger.info(
-                f'MQTTServiceDevice.handle_espaltherma_log!{error}')
-            logger.error(
-                f'MQTTServiceDevice.handle_espaltherma_log!{error}')
+        except Exception as error:
+            logger.info(f"MQTTServiceDevice.handle_espaltherma_log!{error}")
+            logger.error(f"MQTTServiceDevice.handle_espaltherma_log!{error}")
 
-
-
+    def on_disconnect(self, client, userdata, rc):
+        self.m_onMqttConnected = False
+        self.setDeviceState(devicestate=DeviceState.ERROR)
+        logger.info(f"MQTT-Client: on_disconnect")
+        
     def on_connect(self, client, userdata, flags, rc):
         logger.info(f"MQTT-Client: on_connect -> publish_MQTTMetaData()")
 
         # delete previous Topic
         self._mqtt_client.publish(self.getDeviceServicesTopic(), None, retain=True)
         # self._mqtt_client.publish(self.m_device.info_topic(), None, retain=True)
-        
+
         self._mqtt_client.subscribe("espaltherma/ATTR", self.handle_espaltherma_attr)
-        self._mqtt_client.subscribe("espaltherma/LWT", self.handle_espaltherma_lwt)
+
         self._mqtt_client.subscribe("espaltherma/log", self.handle_espaltherma_log)
-        
-                
+
         self.setDeviceState(devicestate=DeviceState.ERROR)
-       
 
         # allregisterPayload = self.readallRegisters()
         # bei start alle retained Senden
         # self.doPublishPayload(allregisterPayload, retained=True)
 
-        self.publish_MQTTMetaData()
-        self.subscribeMQTTWriteTopis()
+        # self.publish_MQTTMetaData()
+        # self.subscribeMQTTWriteTopis()
 
-
-        logger.info(f"MQTT-Client: on_connect -> publish_cached_values()")
+        # logger.info(f"MQTT-Client: on_connect -> publish_cached_values()")
 
         # self.publish_cached_values()
 
-        self.setDeviceState(devicestate=DeviceState.OK)
+        # self.setDeviceState(devicestate=DeviceState.OK)
 
         # devicekey = f"{DEVICE_NAME}.{self._MQTT_NETID}"
         devicekey = f"{self.m_MQTT_NETID}"
@@ -347,12 +337,9 @@ class MqttDeviceESPAltherma(MqttDeviceServiceBase):
             self.m_lock.release()
             return retValue
 
-
-
-
     def doProcess(self):
         try:
-           pass
+            pass
         except Exception as e:
             logger.error(f"device: {self.m_MQTT_NETID}  doProcess : error:{e}")
             logger.info(f"device: {self.m_MQTT_NETID}  doProcess : error:{e}")
