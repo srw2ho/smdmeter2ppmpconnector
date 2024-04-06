@@ -84,42 +84,35 @@ MQTT_TLS_CERT = toml.get("mqtt.tls_cert", "")
 # QUEUE_MQTT = Queue(maxsize=0)
 # QUEUE_INFLUX = Queue(maxsize=0)
 
-def run_ESPAltherma(
-    alias,
-    timeout,
-    refresrate,
 
-):
+def run_ESPAltherma(alias, timeout, refresrate, infolog):
     mqttDeviceService = MqttDeviceESPAltherma(
         MQTT_HOST=MQTT_HOST,
         MQTT_PORT=MQTT_PORT,
         MQTT_USERNAME=MQTT_USERNAME,
         MQTT_PASSWORD=MQTT_PASSWORD,
         MQTT_TLS_CERT=MQTT_TLS_CERT,
-        INFODEBUGLEVEL=1,
+        INFODEBUGLEVEL=infolog,
         MQTT_REFRESH_TIME=refresrate,
         MQTT_NETID=alias,
         MQTT_CONNECT_TIME=timeout,
     )
 
-  
-
     isConnected = mqttDeviceService.connectDevice()
     # time.sleep(1)
 
     # doJson: bool = False
-    RefreshTime: float = 0.2
+    RefreshTime: float = 1.0
     connectTime: int = timeout
 
     while True:
         isMQTTConnected = mqttDeviceService.isMQTTConnected()
 
-
         if isMQTTConnected:
             mqttDeviceService.doProcess()
         # time.sleep(0.2)
         time.sleep(RefreshTime)
-        
+
 
 def run_SMD_meter(
     alias,
@@ -130,6 +123,7 @@ def run_SMD_meter(
     timeout,
     refresrate,
     modbusbatchsleepinsec,
+    infolog,
 ):
     mqttDeviceService = MqttDeviceModbusService(
         MQTT_HOST=MQTT_HOST,
@@ -137,7 +131,7 @@ def run_SMD_meter(
         MQTT_USERNAME=MQTT_USERNAME,
         MQTT_PASSWORD=MQTT_PASSWORD,
         MQTT_TLS_CERT=MQTT_TLS_CERT,
-        INFODEBUGLEVEL=1,
+        INFODEBUGLEVEL=infolog,
         MQTT_REFRESH_TIME=refresrate,
         MQTT_NETID=alias,
         MQTT_CONNECT_TIME=timeout,
@@ -167,16 +161,14 @@ def run_SMD_meter(
             mqttDeviceService.doProcess()
         # time.sleep(0.2)
         time.sleep(RefreshTime)
-    
-
 
 
 async def start_ESPAltherma():
-    EPSALTHERMA_ALIAS = toml.get("espaltherma.alias", "ESPAltherma")
+    EPSALTHERMA_ALIAS = toml.get("espsaltherma.alias", "ESPAltherma")
 
-    EPSALTHERMA_REFRESHRATE = toml.get("espaltherma.refreshrate", 2)
-    EPSALTHERMA_CONNECTIONTIMEOUT = toml.get("espaltherma.connectiontimeout", 2)
-
+    EPSALTHERMA_REFRESHRATE = toml.get("espsaltherma.refreshrate", 2)
+    EPSALTHERMA_CONNECTIONTIMEOUT = toml.get("espsaltherma.connectiontimeout", 2)
+    EPSALTHERMA_INFOLOG = toml.get("espsaltherma.infolog", 1)
 
     # create own thread for each SMD-device
     # for (
@@ -198,19 +190,19 @@ async def start_ESPAltherma():
     #     SDMMETETERS_REFRESHRATE,
 
     # ):
-        # create new thread for each OPC-UA client
+    # create new thread for each OPC-UA client
     thread = Thread(
-            target=run_ESPAltherma,
-            args=(
-                EPSALTHERMA_ALIAS,
-                EPSALTHERMA_CONNECTIONTIMEOUT,
-                EPSALTHERMA_REFRESHRATE,
-
-            ),
-        )
+        target=run_ESPAltherma,
+        args=(
+            EPSALTHERMA_ALIAS,
+            EPSALTHERMA_CONNECTIONTIMEOUT,
+            EPSALTHERMA_REFRESHRATE,
+            EPSALTHERMA_INFOLOG,
+        ),
+    )
 
     thread.start()
-        
+
 
 async def start_smdmeters():
     SMDMETERS_MODBUSHOST = toml.get("sdmmeters.tcpmodbushost", ["localhost"])
@@ -221,6 +213,7 @@ async def start_smdmeters():
     SDMMETETERS_CONNECTIONTIMEOUT = toml.get("sdmmeters.connectiontimeout", [2])
     MODBUS_BATCH_SLEEPINSCS = toml.get("sdmmeters.modbusbatchsleepinsec", [0])
     SDMMETERS_DEVICEID = toml.get("sdmmeters.deviceid", [2])
+    SDMMETERS_INFOLOG = toml.get("sdmmeters.infolog", [1])
 
     # create own thread for each SMD-device
     for (
@@ -232,6 +225,7 @@ async def start_smdmeters():
         timeout,
         refresrate,
         modbusbatchsleepinsec,
+        infolog,
     ) in zip(
         SMDMETERS_MODBUSALIAS,
         SMDMETERS_MODBUSHOST,
@@ -241,6 +235,7 @@ async def start_smdmeters():
         SDMMETETERS_CONNECTIONTIMEOUT,
         SDMMETETERS_REFRESHRATE,
         MODBUS_BATCH_SLEEPINSCS,
+        SDMMETERS_INFOLOG,
     ):
         # create new thread for each OPC-UA client
         thread = Thread(
@@ -254,6 +249,7 @@ async def start_smdmeters():
                 timeout,
                 refresrate,
                 modbusbatchsleepinsec,
+                infolog,
             ),
         )
 
@@ -267,6 +263,7 @@ async def runDaikin():
     DAIKINPW = toml.get("daikin.password", "")
     DAIKINREFRESHRATE = toml.get("daikin.refreshrate", 5)
     DAIKINCONNCTIONTIMEOUT = toml.get("daikin.connectiontimeout", 5)
+    DAIKIN_INFOLOG = toml.get("daikin.infolog", 1)
     RefreshTime: float = 0.2
 
     mqttDeviceService = MqttDeviceDaikinService(
@@ -275,7 +272,7 @@ async def runDaikin():
         MQTT_USERNAME=MQTT_USERNAME,
         MQTT_PASSWORD=MQTT_PASSWORD,
         MQTT_TLS_CERT=MQTT_TLS_CERT,
-        INFODEBUGLEVEL=1,
+        INFODEBUGLEVEL=DAIKIN_INFOLOG,
         MQTT_REFRESH_TIME=DAIKINREFRESHRATE,
         MQTT_CONNECT_TIME=DAIKINCONNCTIONTIMEOUT,
         MQTT_NETID="DaikinWP",
@@ -293,15 +290,24 @@ async def runDaikin():
 def main():
     # start_smdmeters()
     loop = asyncio.get_event_loop()
-    
-    
-    loop.run_until_complete(start_ESPAltherma())
-    
-    # loop.run_until_complete(start_smdmeters())
-    
-    # loop.run_until_complete(runDaikin())
+
+    enable_altherma = toml.get("espsaltherma.enable", 1)
+    if enable_altherma > 0:
+        loop.run_until_complete(start_ESPAltherma())
+
+    enable_sdmmeters = toml.get("sdmmeters.enable", 1)
+    if enable_sdmmeters > 0:
+        loop.run_until_complete(start_smdmeters())
+
+    enable_daikin = toml.get("daikin.enable", 1)
+    if enable_daikin > 0:
+        loop.run_until_complete(runDaikin())
+    else:
+        while True:
+            time.sleep(0.5)
+
     logger.error(f"runDaikin.loop.run_until_complete -closed")
-    
+
     loop.close()
 
 

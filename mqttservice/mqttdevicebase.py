@@ -74,6 +74,7 @@ class MqttDeviceServiceBase(object):
         self.m_TimeSpan = TimeSpan()
         self.m_TimeSpan_Holding = TimeSpan()
 
+
         self._mqtt_client = MQTTClient(
             host=MQTT_HOST,
             port=MQTT_PORT,

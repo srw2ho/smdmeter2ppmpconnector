@@ -65,6 +65,8 @@ class MqttDeviceESPAltherma(MqttDeviceServiceBase):
             MQTT_NETID=MQTT_NETID,
             MQTT_CONNECT_TIME=MQTT_CONNECT_TIME,
         )
+        self.m_writeMetaData =False
+   
 
     def doStartProcessCommandThred(self):
         pass
@@ -159,8 +161,7 @@ class MqttDeviceESPAltherma(MqttDeviceServiceBase):
         """
 
         def filter(key: str, value: any) -> any:
-            if key == "[HPSU] Bypass valve position (0:Bypass 100:Emitter)":
-                a = 1
+
             if isinstance(value, str):
                 x = re.match(r"^[-0-9.]+", value)
                 if x:
@@ -187,6 +188,7 @@ class MqttDeviceESPAltherma(MqttDeviceServiceBase):
             subscriptions = self._mqtt_client.getSubscriptions()
             if "espaltherma/LWT" not in subscriptions:
                 self._mqtt_client.subscribe("espaltherma/LWT", self.handle_espaltherma_lwt)
+            self.LogInfo(filteredpayload)
         # logger.info(f'MQTT Queue size: {QUEUE_MQTT.qsize()}')
         except Exception as error:
             logger.info(f"MQTTServiceDevice.handle_espaltherma_attr!{error}")
@@ -202,7 +204,10 @@ class MqttDeviceESPAltherma(MqttDeviceServiceBase):
             action = payload.decode("utf-8")
             # action: dict = json.loads(payload)
             if action == "Online":
-                self.publish_MQTTMetaData()
+                if not self.m_writeMetaData:
+                    logger.info(f"MQTT-Client: on_connect -> publish_MQTTMetaData()")
+                    self.publish_MQTTMetaData()
+                    self.m_writeMetaData = True
                 self.setDeviceState(devicestate=DeviceState.OK)
             else:
                 self.setDeviceState(devicestate=DeviceState.ERROR)
@@ -222,7 +227,7 @@ class MqttDeviceESPAltherma(MqttDeviceServiceBase):
             out = payload.decode("utf-8")
 
             # action:dict = json.loads(payload)
-            logger.info(f"MQTTServiceDevice.handle_espaltherma_log->{out}")
+            # logger.info(f"MQTTServiceDevice.handle_espaltherma_log->{out}")
         # logger.info(f'MQTT Queue size: {QUEUE_MQTT.qsize()}')
         except Exception as error:
             logger.info(f"MQTTServiceDevice.handle_espaltherma_log!{error}")
@@ -234,8 +239,8 @@ class MqttDeviceESPAltherma(MqttDeviceServiceBase):
         logger.info(f"MQTT-Client: on_disconnect")
         
     def on_connect(self, client, userdata, flags, rc):
-        logger.info(f"MQTT-Client: on_connect -> publish_MQTTMetaData()")
-
+        # logger.info(f"MQTT-Client: on_connect -> publish_MQTTMetaData()")
+        self.m_writeMetaData =False
         # delete previous Topic
         self._mqtt_client.publish(self.getDeviceServicesTopic(), None, retain=True)
         # self._mqtt_client.publish(self.m_device.info_topic(), None, retain=True)
@@ -337,9 +342,17 @@ class MqttDeviceESPAltherma(MqttDeviceServiceBase):
             self.m_lock.release()
             return retValue
 
-    def doProcess(self):
-        try:
-            pass
-        except Exception as e:
-            logger.error(f"device: {self.m_MQTT_NETID}  doProcess : error:{e}")
-            logger.info(f"device: {self.m_MQTT_NETID}  doProcess : error:{e}")
+    def LogInfo(self, jsonpayloadInput: dict) -> dict:
+        if self.m_INFODEBUGLEVEL > 0:
+            logger.info(f"device: {self.m_MQTT_NETID} Read Input Registers:")
+
+            for k, v in jsonpayloadInput.items():
+                value: any = v
+                unit: str = ""
+
+                if type(value) is list or type(value) is dict:
+                    logger.info(f"\t{k}: {str(value)} {unit}")
+                elif type(value) is float:
+                    logger.info(f"\t{k}: {value:.2f} {unit}")
+                else:
+                    logger.info(f"\t{k}: {value} {unit}")
