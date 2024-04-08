@@ -247,7 +247,7 @@ class MqttDeviceESPAltherma(MqttDeviceServiceBase):
 
         self._mqtt_client.subscribe("espaltherma/ATTR", self.handle_espaltherma_attr)
 
-        self._mqtt_client.subscribe("espaltherma/log", self.handle_espaltherma_log)
+        # self._mqtt_client.subscribe("espaltherma/log", self.handle_espaltherma_log)
 
         self.setDeviceState(devicestate=DeviceState.ERROR)
 
