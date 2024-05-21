@@ -1,4 +1,6 @@
-FROM python:3.11-slim-buster
+ARG PYTHON_VERSION="3.11-bookworm"
+
+FROM python:$PYTHON_VERSION
 
 RUN apt update && apt install -y git gcc
 RUN git config --global credential.helper cache

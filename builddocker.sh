@@ -8,7 +8,13 @@ echo -e "lese aus Datei dockerversion.txt die Version und schreibe diese into Bu
 
 Build=$(<dockerversion.txt)
 
+# PYTHON_INSTALLVERSION=3.11-bookworm # for RASPI 5
+# PYTHON_INSTALLVERSION=3.11-slim-bookworm # for RASPI 5
+PYTHON_INSTALLVERSION=3.11-slim-buster # for RASPI 5
 
+# PYTHON_INSTALLVERSION=3.9-slim-bookworm # for RASPI 4
+# PYTHON_INSTALLVERSION=3.9-bookworm # for RASPI 4
+# PYTHON_INSTALLVERSION=3.9-slim-buster # for RASPI 4 funktioniert nicht mit lgpio
 
 dockerimage="smdmeter2ppmpconnector"
 
@@ -28,7 +34,7 @@ echo -e " build dockerimage: $dockerimage  Build Version:" $Build
 
 
 # sudo docker build --build-arg NODE_ENV=development --build-arg BUILDCMD=dev -f Dockerfile.MH -t grafana/grafana-mhdev:v7.6.5 .
-sudo docker build --no-cache -t ${dockerimage}:${Build}  -f Dockerfile .
+sudo docker build --no-cache -t ${dockerimage}:${Build} --build-arg PYTHON_VERSION=${PYTHON_INSTALLVERSION} -f Dockerfile .
 
 # @docker build . -t %dockerimage%:%Build%
 
