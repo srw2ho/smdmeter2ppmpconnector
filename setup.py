@@ -3,10 +3,10 @@ import setuptools
 NAME = "smdmeter2ppmpconnector"
 
 DEPENDENCIES_ARTIFACTORY = [
-    # 'pymodbus==3.5.0',
-    # 'pyserial-asyncio==0.6',
-    "pymodbus",
-    "pyserial-asyncio",
+    'pymodbus==3.5.0',
+    'pyserial-asyncio==0.6',
+    # "pymodbus",
+    # "pyserial-asyncio",
     "oic",
 ]
 
