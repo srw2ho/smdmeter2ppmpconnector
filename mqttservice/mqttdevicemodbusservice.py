@@ -732,7 +732,7 @@ class MqttDeviceModbusService(MqttDeviceServiceBase):
                     self._mqtt_client.publish(
                         self.m_ctrldevice.ppmp_topic(), ppmppayload, retain=False
                     )
-                    self.doPublishPayload(jsonpayloadInput)
+                    self.doPublishPayload(jsonpayload=jsonpayloadInput,retain=True)
 
             # jsonpayloadHold = self.m_SMD_Device.read_all(
             #     sdm_modbus.registerType.HOLDING, scaling=True
