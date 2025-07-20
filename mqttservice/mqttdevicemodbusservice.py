@@ -464,7 +464,9 @@ class MqttDeviceModbusService(MqttDeviceServiceBase):
         def getReadTopic(k: any) -> str:
             if k in self.m_SMD_Device.registers:
                 v = self.m_SMD_Device.registers[k]
-                # if v[2] == registerType.INPUT :
+                if v[2] in [registerType.INPUT, registerType.SINGLE_INPUT,registerType.HOLDING]:
+                    # if v[2] == registerType.INPUT:
+                    return self.getTopicByKey(k)
                 return self.getTopicByKey(k)
 
             return ""
@@ -499,7 +501,17 @@ class MqttDeviceModbusService(MqttDeviceServiceBase):
                 v = self.m_SMD_Device.registers[k]
                 return str(v[6])
             return ""
-
+        def get_value(k: any):
+            # Try to get the value from the current MQTT payload
+            if k in self.m_MQTTPayload:
+                return self.m_MQTTPayload[k]
+            # If not available, return a sensible default based on type info from registers
+            if k in self.m_SMD_Device.registers:
+                reg = self.m_SMD_Device.registers[k]
+                vtype = reg[4]
+                if vtype == float or vtype == int:
+                    return 0
+            return ""
         try:
             self.m_lock.acquire()
             self.m_MetaData = {}
@@ -508,6 +520,21 @@ class MqttDeviceModbusService(MqttDeviceServiceBase):
             topic = self.getMetaDataTopic()
 
             # self.readallRegisters()
+            # jsondatapayload = {
+            #     self.getMetaKeyByKey(k): {
+            #         "identifier": k,
+            #         "viewname": getViename(k),
+            #         "vartype": getVarType(k),
+            #         "readtopic": getReadTopic(k),
+            #         "writetopic": getWriteTopic(k),
+            #         "devicekey": self.m_MQTT_NETID,
+            #         "structure": getStructure(k),
+            #         "unit": getUnit(k),
+            #         "value": v,
+            #         "ctrlchannel": "",
+            #     }
+            #     for k, v in self.m_MQTTPayload.items()
+            # }
             jsondatapayload = {
                 self.getMetaKeyByKey(k): {
                     "identifier": k,
@@ -518,11 +545,14 @@ class MqttDeviceModbusService(MqttDeviceServiceBase):
                     "devicekey": self.m_MQTT_NETID,
                     "structure": getStructure(k),
                     "unit": getUnit(k),
-                    "value": v,
+                    "value": get_value(k),
                     "ctrlchannel": "",
                 }
-                for k, v in self.m_MQTTPayload.items()
+                for k, v in self.m_SMD_Device.registers.items() if v[2] in [registerType.SINGLE_HOLDING,registerType.HOLDING, registerType.SINGLE_INPUT, registerType.INPUT]    
             }
+
+            # jsondatapayload.update(jsondatapayload_)
+
 
             self.m_MetaData = jsondatapayload
 
@@ -633,10 +663,11 @@ class MqttDeviceModbusService(MqttDeviceServiceBase):
     #         self.m_lock.release()
 
     def storeBatchfordallHoldingRegisters(self) -> None:
+        """Store the batch value for all holding registers in m_HoldingBatchRegister."""
         self.m_HoldingBatchRegister = {
             k: self.m_SMD_Device.getBatchForRegisterByKey(k)
             for k, v in self.m_SMD_Device.registers.items()
-            if (v[2] == sdm_modbus.registerType.HOLDING)
+            if v[2] in (sdm_modbus.registerType.HOLDING, sdm_modbus.registerType.SINGLE_HOLDING)
         }
 
     def restoreBatchfordallHoldingRegisters(self) -> None:
@@ -648,26 +679,34 @@ class MqttDeviceModbusService(MqttDeviceServiceBase):
             self.m_SMD_Device.setBatchForRegisterByKey(k, batch)
 
     def readallRegisters(self) -> dict:
+        """Read all INPUT, SINGLE_INPUT, HOLDING, and SINGLE_HOLDING registers and update MQTT payload."""
         try:
             self.m_lock.acquire()
 
-            jsonpayloadInput = self.m_SMD_Device.read_all(
-                sdm_modbus.registerType.INPUT,
-                scaling=True,
-                batchsleepinSecs=self.m_MODBUS_BATCH_SLEEP,
-            )
-            jsonpayloadHolding = self.m_SMD_Device.read_all(
-                sdm_modbus.registerType.HOLDING,
-                scaling=True,
-                batchsleepinSecs=self.m_MODBUS_BATCH_SLEEP,
-            )
+            # Read INPUT and SINGLE_INPUT registers
+            jsonpayloadInput = {}
+            for reg_type in [sdm_modbus.registerType.INPUT, sdm_modbus.registerType.SINGLE_INPUT]:
+                input_data = self.m_SMD_Device.read_all(
+                    reg_type,
+                    scaling=True,
+                    batchsleepinSecs=self.m_MODBUS_BATCH_SLEEP,
+                )
+                jsonpayloadInput.update(input_data)
 
-            # Holding-Register nur einmal lesen und dann nicht mit batch=0 ausblenden
-            # Achtung, bei KebakeycontactP30 sind die Holding Registers die Input-Register
-            # hier müssen die Holding-Registers bleiben!!
-            # die Batch-Register müssen daher bleiben
+            # Read HOLDING and SINGLE_HOLDING registers
+            jsonpayloadHolding = {}
+            for reg_type in [sdm_modbus.registerType.HOLDING, sdm_modbus.registerType.SINGLE_HOLDING]:
+                holding_data = self.m_SMD_Device.read_all(
+                    reg_type,
+                    scaling=True,
+                    batchsleepinSecs=self.m_MODBUS_BATCH_SLEEP,
+                )
+                jsonpayloadHolding.update(holding_data)
+
+            # Set batch to 0 for all holding registers after reading
             self.setBatchfordallHoldingRegisters(0)
 
+            # Update MQTT payload with all read values
             self.m_MQTTPayload.update(jsonpayloadInput)
             self.m_MQTTPayload.update(jsonpayloadHolding)
 
@@ -702,17 +741,26 @@ class MqttDeviceModbusService(MqttDeviceServiceBase):
     def readInputRegisters(self) -> dict:
         try:
             self.m_lock.acquire()
-            jsonpayloadInput = self.m_SMD_Device.read_all(
-                sdm_modbus.registerType.INPUT,
-                scaling=True,
-                batchsleepinSecs=self.m_MODBUS_BATCH_SLEEP,
-            )
+            # Read INPUT and SINGLE_INPUT registers
+            jsonpayloadInput = {}
+            for reg_type in [sdm_modbus.registerType.INPUT, sdm_modbus.registerType.SINGLE_INPUT]:
+                input_data = self.m_SMD_Device.read_all(
+                    reg_type,
+                    scaling=True,
+                    batchsleepinSecs=self.m_MODBUS_BATCH_SLEEP,
+                )
+                jsonpayloadInput.update(input_data)
 
-            jsonpayloadHold = self.m_SMD_Device.read_all(
-                sdm_modbus.registerType.HOLDING,
-                scaling=True,
-                batchsleepinSecs=self.m_MODBUS_BATCH_SLEEP,
-            )
+            # Read HOLDING and SINGLE_HOLDING registers
+            jsonpayloadHold = {}
+            for reg_type in [sdm_modbus.registerType.HOLDING, sdm_modbus.registerType.SINGLE_HOLDING]:
+            # for reg_type in [sdm_modbus.registerType.HOLDING]:
+                holding_data = self.m_SMD_Device.read_all(
+                    reg_type,
+                    scaling=True,
+                    batchsleepinSecs=self.m_MODBUS_BATCH_SLEEP,
+                )
+                jsonpayloadHold.update(holding_data)
 
             if len(jsonpayloadHold.keys()) > 0:
                 jsonpayloadInput.update(jsonpayloadHold)
@@ -773,6 +821,10 @@ class MqttDeviceModbusService(MqttDeviceServiceBase):
                     self.setDeviceState(DeviceState.OK)
                     self.m_TimeSpan.setActTime(timestamp)
                     self.readInputRegisters()
+                    
+        
+                 
+
 
             else:
                 if hours_actsecs >= self.m_MQTT_CONNECT_TIME:

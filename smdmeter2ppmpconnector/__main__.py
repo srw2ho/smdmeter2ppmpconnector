@@ -1,4 +1,5 @@
 import asyncio
+from datetime import datetime, timezone
 import json
 import sys
 import logging
@@ -151,7 +152,8 @@ def run_SMD_meter(
 
     # doJson: bool = False
     RefreshTime: float = 0.2
-    connectTime: int = timeout
+    # connectTime: int = timeout
+    # trigger: int = 1
 
     while True:
         isMQTTConnected = mqttDeviceService.isMQTTConnected()
@@ -159,6 +161,53 @@ def run_SMD_meter(
 
         if isMQTTConnected:
             mqttDeviceService.doProcess()
+            # Improved trigger handling using match-case
+            # match trigger:
+            #     case 1:
+            #         trigger += 1
+            #         response = mqttDeviceService.getMeter().write("Set_Phase_Switch_Toggle", 3)
+            #         if response.isError ():
+            #             logger.error(f"Error writing Set_Phase_Switch_Toggle: {response.error}")
+            #         response = mqttDeviceService.getMeter().write("Trigger_Phase_Switch", 0)
+            #         if response.isError ():
+            #             logger.error(f"Error writing Set_Phase_Switch_Toggle: {response.error}")
+                        
+            #         response=mqttDeviceService.getMeter().write("Failsafe_Current",8)
+            #         if response.isError ():
+            #             logger.error(f"Error writing Set_Phase_Switch_Toggle: {response.error}")
+            #         response=mqttDeviceService.getMeter().write("Failsafe_Timeout",8)
+            #         if response.isError ():
+            #             logger.error(f"Error writing Set_Phase_Switch_Toggle: {response.error}")
+            #         logger.info("Option 1 selected: Phase switch toggled and trigger reset.")
+            #         timestamp = datetime.now(timezone.utc).astimezone()
+            #     case 2:
+            #         if timestamp is not None and (datetime.now(timezone.utc).astimezone() - timestamp).total_seconds() > 300:
+            #             timestamp = datetime.now(timezone.utc).astimezone()
+            #             trigger += 1
+            #             response = mqttDeviceService.getMeter().write("Set_Phase_Switch_Toggle", 3)
+            #             response = mqttDeviceService.getMeter().write("Trigger_Phase_Switch", 1)
+            #             if response.isError ():
+            #                 logger.error(f"Error writing Set_Phase_Switch_Toggle: {response.error}")
+            #             logger.info("Option 2 selected: Phase switch triggered.")
+            #     case 3:
+            #         if timestamp is not None and (datetime.now(timezone.utc).astimezone() - timestamp).total_seconds() > 3:
+            #             trigger += 1  
+            #             timestamp = datetime.now(timezone.utc).astimezone()
+            #             response=mqttDeviceService.getMeter().write("Charging_Station_Enable",1)
+            #             if response.isError ():
+            #                 logger.error(f"Error writing Set_Phase_Switch_Toggle: {response.error}")
+            #                 # 8 A
+            #             response=mqttDeviceService.getMeter().write("Set_Charging_Current",8)
+            #             if response.isError ():
+            #                 logger.error(f"Error writing Set_Phase_Switch_Toggle: {response.error}")
+            #             logger.info("Option 3 selected.")
+            #     case _:
+            #         if timestamp is not None and (datetime.now(timezone.utc).astimezone() - timestamp).total_seconds() > 300:
+            #             trigger =1
+            #             timestamp = datetime.now(timezone.utc).astimezone()
+            #             logger.warning("Invalid trigger option selected.")
+
+
         # time.sleep(0.2)
         time.sleep(RefreshTime)
 

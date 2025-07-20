@@ -25,6 +25,7 @@ class registerType(enum.Enum):
     INPUT = 1
     HOLDING = 2
     SINGLE_HOLDING = 3
+    SINGLE_INPUT = 4
 
 
 class registerDataType(enum.Enum):
@@ -249,7 +250,7 @@ class Meter:
         )
 
     def _write_singleholding_register(self, address, value):
-        return self.client.write_register(address=address, values=value, unit=self.unit)
+        return self.client.write_register(address=address, value=value[0], unit=self.unit)
 
     def _encode_value(self, data, dtype):
         builder = BinaryPayloadBuilder(
@@ -300,7 +301,15 @@ class Meter:
                 return self._decode_value(
                     self._read_input_registers(address, length), length, dtype, vtype
                 )
+            elif rtype == registerType.SINGLE_INPUT:
+               return self._decode_value(
+                    self._read_holding_registers(address, length), length, dtype, vtype
+                )
             elif rtype == registerType.HOLDING:
+                return self._decode_value(
+                    self._read_holding_registers(address, length), length, dtype, vtype
+                )
+            elif rtype == registerType.SINGLE_HOLDING:
                 return self._decode_value(
                     self._read_holding_registers(address, length), length, dtype, vtype
                 )
@@ -334,6 +343,11 @@ class Meter:
         try:
             if rtype == registerType.INPUT:
                 data = self._read_input_registers(offset, length)
+            elif rtype == registerType.SINGLE_INPUT:
+                  data = self._read_holding_registers(offset, length)
+            elif rtype == registerType.SINGLE_HOLDING:
+                # data = self._read_holding_registers(offset, length)
+                data = None
             elif rtype == registerType.HOLDING:
                 data = self._read_holding_registers(offset, length)
             else:
@@ -408,7 +422,7 @@ class Meter:
         registers = {k: v for k, v in self.registers.items() if (v[2] == rtype)}
         results = {}
 
-        for batch in range(1, max(len(registers), 2)):
+        for batch in range(1, max(len(registers)+1, 2)):
             register_batch = {k: v for k, v in registers.items() if (v[7] == batch)}
 
             if not register_batch:
